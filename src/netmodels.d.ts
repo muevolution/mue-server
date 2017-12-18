@@ -47,9 +47,23 @@ export interface ExpandedCommandRequest {
     params: {};
 }
 
+export interface LocalCommand {
+    command: string;
+    args?: string[];
+    params?: {};
+}
+
+export interface MessageFormats {
+    firstPerson: string;
+    thirdPerson: string;
+}
+
 export interface InteriorMessage {
     message: string;
+    extendedContent?: string;
+    extendedFormat?: string | MessageFormats;
     source?: string;
+    script?: string;
     meta?: {};
     targetChannel?: keyof ServerToClient;
 }

@@ -1,21 +1,39 @@
 import * as _ from "lodash";
 
 import { CommandProcessor } from "../commandproc";
+import { BaseTypedEmitter } from "../common";
+import { Logger } from "../logging";
 import { CommandRequest, InteriorMessage } from "../netmodels";
 import { AsyncRedisClient, RedisConnection } from "../redis";
 import { Storage } from "../storage";
+import { Action } from "./action";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
-import { GameObjectTypes, splitExtendedId } from "./models";
+import { GameObjectTypes, InterServerMessage, MetaData, splitExtendedId } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
+import { Script } from "./script";
 
 export class World {
     private cmdproc = new CommandProcessor(this);
+    private isc: AsyncRedisClient;
 
     constructor(private opts: {
         redisConnection: RedisConnection
     }) {
+    }
+
+    public async init() {
+        this.isc = this.opts.redisConnection.client.duplicate();
+        await this.isc.publishAsync("c:isc", JSON.stringify({"event": "joined"} as InterServerMessage));
+        await this.isc.subscribeAsync("c:isc");
+
+        // TODO: Move the handler elsewhere
+        this.isc.on("message", (channel, message: InterServerMessage) => {
+            if (message.event === "joined") {
+                Logger.info("Server joined cluster");
+            }
+        });
     }
 
     public get storage(): Storage {
@@ -71,17 +89,30 @@ export class World {
         return Item.imitate(this, id);
     }
 
-    public getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject> {
+    public getScriptById(id: string): Promise<Script> {
+        return Script.imitate(this, id);
+    }
+
+    public getActionById(id: string): Promise<Action> {
+        return Action.imitate(this, id);
+    }
+
+    public getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject<any>> {
         if (!id) {
             return null;
         }
 
+        const split = splitExtendedId(id);
         if (!type) {
-            const split = splitExtendedId(id);
             if (!split.type) {
                 throw new Error("ID was not extended");
             }
+
             type = split.type;
+        }
+
+        if (type !== split.type) {
+            throw new Error(`Types do not match. Got ${split.type}, expected ${type}`);
         }
 
         switch (type) {
@@ -91,11 +122,20 @@ export class World {
                 return this.getRoomById(id);
             case GameObjectTypes.ITEM:
                 return this.getItemById(id);
+            case GameObjectTypes.SCRIPT:
+                return this.getScriptById(id);
+            case GameObjectTypes.ACTION:
+                return this.getActionById(id);
         }
     }
 
     public async getObjectsByIds(ids: Promise<string[]> | string[], type?: GameObjectTypes): Promise<GameObject[]> {
         return Promise.all(_.map(await ids, (id) => this.getObjectById(id)));
+    }
+
+    public async getActiveServers(): Promise<number> {
+        const worlds = await this.opts.redisConnection.numsub("c:isc");
+        return worlds["c:isc"];
     }
 
     public async getActiveRoomIds(): Promise<string[]> {

@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import { Multi } from "redis";
 
-import { GameObject, GameObjectTypes, MetaData, MetaKeys } from "./objects";
+import { GameObject, GameObjectTypes, MetaData, MetaKeys, splitExtendedId } from "./objects";
 import { AsyncRedisClient, AsyncRedisMulti } from "./redis";
 
 export class Storage {
@@ -27,6 +27,10 @@ export class Storage {
         return Storage.getKeyStructure(owner, "meta");
     }
 
+    private static getScriptKeyStructure(owner: GameObject | string) {
+        return Storage.getKeyStructure(owner, "script");
+    }
+
     private static getObjectKeyStructure(object: GameObject) {
         return `i:${object.type}:all`;
     }
@@ -39,12 +43,17 @@ export class Storage {
     }
 
     async addObject(object: GameObject) {
+        // TODO: Handle the ID being in use
         const multi = this.client.multi();
-        this.updateMetaInMulti(multi, Storage.getMetaKeyStructure(object), object.meta);
+        this.updateHashInMulti(multi, Storage.getMetaKeyStructure(object), object.meta);
         multi.rpush(Storage.getObjectKeyStructure(object), object.id);
 
         if (object.type === GameObjectTypes.PLAYER) {
             multi.hset(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER), object.name.toLowerCase(), object.id);
+        }
+
+        if (object.meta.parent) {
+            this.moveInMulti(multi, object, object.meta.parent, null, false);
         }
 
         return multi.execAsync();
@@ -79,12 +88,30 @@ export class Storage {
         return result === "OK";
     }
 
-    getContents(owner: GameObject | string): Promise<string[]> {
-        return this.client.lrangeAsync(Storage.getContentsKeyStructure(owner), 0, -1);
+    async getContents<MD extends MetaData>(owner: GameObject<MD> | string, type?: GameObjectTypes): Promise<string[]> {
+        const contents = await this.client.lrangeAsync(Storage.getContentsKeyStructure(owner), 0, -1);
+        if (!type) {
+            return contents;
+        }
+
+        return _.filter(contents, (id) => {
+            const split = splitExtendedId(id);
+            return split.type === type;
+        });
     }
 
-    moveObject(object: GameObject | string, oldOwner: GameObject | string, newOwner: GameObject | string) {
+    async moveObject(object: GameObject | string, newOwner: GameObject | string, oldOwner?: GameObject | string): Promise<boolean> {
         const multi = this.client.multi();
+        await this.moveInMulti(multi, object, newOwner, oldOwner);
+        await multi.execAsync();
+        return true;
+    }
+
+    moveInMulti(multi: Multi, object: GameObject | string, newOwner: GameObject | string, oldOwner?: GameObject | string, writeMeta: boolean = true) {
+        if (!newOwner) {
+            return false;
+        }
+
         let objectEid;
         if (typeof object === "object") {
             objectEid = object.id;
@@ -100,7 +127,9 @@ export class Storage {
         }
 
         // Set object's reference
-        multi.hset(Storage.getMetaKeyStructure(object), MetaKeys.PARENT, newOwnerEid);
+        if (writeMeta) {
+            multi.hset(Storage.getMetaKeyStructure(object), "parent", newOwnerEid);
+        }
 
         // Remove from old storage
         if (oldOwner) {
@@ -109,27 +138,25 @@ export class Storage {
 
         // Add to new
         multi.rpush(Storage.getContentsKeyStructure(newOwner), objectEid);
-
-        return multi.execAsync();
     }
 
-    getMeta(object: GameObject | string): Promise<MetaData>;
-    getMeta(object: GameObject | string, key: MetaKeys): Promise<string>;
-    getMeta(object: GameObject | string, key?: MetaKeys): Promise<string | MetaData> {
+    getMeta<MD extends MetaData>(object: GameObject<MD> | string): Promise<MD>;
+    getMeta<MD extends MetaData, KD extends keyof MetaData>(object: GameObject<MD> | string, key: KD): Promise<string>;
+    getMeta<MD extends MetaData, KD extends keyof MetaData>(object: GameObject<MD> | string, key?: KD): Promise<string | MD> {
         if (key) {
             return this.client.hgetAsync(Storage.getMetaKeyStructure(object), key);
         } else {
-            return this.client.hgetallAsync(Storage.getMetaKeyStructure(object)) as Promise<MetaData>;
+            return this.client.hgetallAsync(Storage.getMetaKeyStructure(object)) as Promise<any> as Promise<MD>;
         }
     }
 
-    updateMeta(object: GameObject | string, meta: MetaData): Promise<boolean>;
-    updateMeta(object: GameObject | string, key: MetaKeys, value: string): Promise<boolean>;
-    async updateMeta(object: GameObject | string, meta: MetaKeys | MetaData, value?: string): Promise<boolean> {
+    updateMeta<MD extends MetaData>(object: GameObject<MD> | string, meta: MD): Promise<boolean>;
+    updateMeta<MD extends MetaData, KD extends keyof MD>(object: GameObject<MD> | string, key: KD, value: string): Promise<boolean>;
+    async updateMeta<MD extends MetaData, KD extends keyof MD>(object: GameObject<MD> | string, meta: KD | MD, value?: string): Promise<boolean> {
         const key = Storage.getMetaKeyStructure(object);
         if (typeof meta === "object") {
             const multi = this.client.multi();
-            this.updateMetaInMulti(multi, key, meta);
+            this.updateHashInMulti(multi, key, meta);
             return multi.execAsync();
         } else {
             await this.client.hsetAsync(key, meta, value);
@@ -137,13 +164,22 @@ export class Storage {
         }
     }
 
-    updateMetaInMulti(multi: Multi, key: string, meta: MetaData) {
+    updateHashInMulti<MD extends MetaData>(multi: Multi, key: string, meta: MD) {
         _.forEach(meta, (v, k) => {
             if (v !== undefined && v !== null) {
-                multi.hset(key, k, v.toString());
+                multi.hset(key, k, v);
             } else {
                 multi.hdel(key, k);
             }
         });
+    }
+
+    async getScriptCode(object: GameObject | string): Promise<string> {
+        return this.client.getAsync(Storage.getScriptKeyStructure(object));
+    }
+
+    async setScriptCode(object: GameObject | string, code: string): Promise<boolean> {
+        await this.client.setAsync(Storage.getScriptKeyStructure(object), code);
+        return true;
     }
 }

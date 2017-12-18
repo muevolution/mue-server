@@ -1,5 +1,5 @@
 import { CommandProcessor } from "./commandproc";
-import { TypedEmitter } from "./common";
+import { BaseTypedEmitter, TypedEmitter } from "./common";
 import { Logger } from "./logging";
 import {
     AuthRequest,
@@ -10,13 +10,14 @@ import {
     InteriorMessage,
     ServerToClient
 } from "./netmodels";
-import { ObjectMoveEvent, Player, World } from "./objects";
+import { ObjectMoveEvent, Player, PlayerMessage, World } from "./objects";
 import { AsyncRedisClient } from "./redis";
 
 export class PubSub {
     private _player: Player;
     private client: AsyncRedisClient;
     private tsock: TypedEmitter<ServerToClient, ClientToServer>;
+    private tupdater: BaseTypedEmitter<PlayerMessage, PlayerMessage>;
     private boundPlayerMoveEvent: (...args: any[]) => void;
     private boundPlayerQuitEvent: (...args: any[]) => void;
 
@@ -38,13 +39,14 @@ export class PubSub {
 
     subscribe(player: Player, ...channels: string[]) {
         this._player = player;
+        this.tupdater = new BaseTypedEmitter(player);
         const result = this.client.subscribeAsync(channels);
         if (!result) {
             return false;
         }
 
-        player.on("move", this.boundPlayerMoveEvent);
-        player.on("quit", this.boundPlayerQuitEvent);
+        this.tupdater.on("move", this.boundPlayerMoveEvent);
+        this.tupdater.on("quit", this.boundPlayerQuitEvent);
 
         return true;
     }

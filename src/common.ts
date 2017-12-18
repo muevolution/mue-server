@@ -1,3 +1,5 @@
+// tslint:disable:max-classes-per-file
+
 import { EventEmitter } from "events";
 
 import { Logger } from "./logging";
@@ -8,7 +10,7 @@ interface CompatibleEmitter {
     on(event: string, listener: (data: any) => void): any;
 }
 
-export class TypedEmitter<O extends MessageEvent, I extends MessageEvent> {
+export class BaseTypedEmitter<O, I> {
     constructor(protected socket: CompatibleEmitter) {}
 
     public emit<T extends keyof O, K extends O[T]>(event: T, data: K) {
@@ -44,3 +46,5 @@ export class TypedEmitter<O extends MessageEvent, I extends MessageEvent> {
         });
     }
 }
+
+export class TypedEmitter<O extends MessageEvent, I extends MessageEvent> extends BaseTypedEmitter<O, I> {}

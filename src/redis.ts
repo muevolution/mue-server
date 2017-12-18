@@ -1,8 +1,9 @@
-import * as Bluebird from "bluebird";
+import * as bluebird from "bluebird";
+import * as _ from "lodash";
 import * as redis from "redis";
 
-Bluebird.promisifyAll(redis.RedisClient.prototype);
-Bluebird.promisifyAll(redis.Multi.prototype);
+bluebird.promisifyAll(redis.RedisClient.prototype);
+bluebird.promisifyAll(redis.Multi.prototype);
 
 
 export class RedisConnection {
@@ -14,6 +15,13 @@ export class RedisConnection {
 
     constructor(private clientSync: redis.RedisClient) {
         this.client = clientSync as AsyncRedisClient;
+    }
+
+    async numsub(...channels: string[]): Promise<{[channel: string]: number}> {
+        const results = await this.client.pubsubAsync("numsub", ...channels);
+        const channelNames = _.filter(results, (v, i) => i % 2 === 0);
+        const channelCount = _.filter(results, (v, i) => i % 2 !== 0);
+        return _.fromPairs(_.zip(channelNames, channelCount));
     }
 }
 
@@ -34,6 +42,7 @@ export interface AsyncRedisClient extends redis.RedisClient {
     hsetAsync(key: string, field: string, value: string): Promise<number>;
 
     pubsubAsync(command: "channels", pattern?: string): Promise<string[]>;
+    pubsubAsync(command: "numsub", ...channels: string[]): Promise<Array<string|number>>;
     subscribeAsync(channel: string | string[]): Promise<string>;
     unsubscribeAsync(channel: string | string[]): Promise<string>;
     publishAsync(channel: string, value: string): Promise<number>;

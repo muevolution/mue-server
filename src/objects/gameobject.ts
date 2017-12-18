@@ -2,12 +2,25 @@ import { EventEmitter } from "events";
 import * as _ from "lodash";
 import * as shortid from "shortid";
 
-import { GameObjectTypes, IGameObject, MetaData, MetaKeys, splitExtendedId } from "./models";
+import { BaseTypedEmitter } from "../common";
+import { GameObjectMessage, GameObjectTypes, IGameObject, MetaData, splitExtendedId } from "./models";
 import { World } from "./world";
 
+export abstract class GameObject<MD extends MetaData = MetaData> extends EventEmitter implements IGameObject {
+    public static checkType(data: GameObject<any> | string, type: GameObjectTypes): boolean {
+        if (!data) {
+            return false;
+        }
 
-export abstract class GameObject extends EventEmitter implements IGameObject {
-    public static deserialize<T extends GameObject>(data: string): T {
+        if (data instanceof GameObject) {
+            return (data.type === type);
+        }
+
+        const split = splitExtendedId(data);
+        return (split.type === type);
+    }
+
+    public static deserialize<T extends GameObject<any>>(data: string): T {
         // TODO: Add type checking
         return JSON.parse(data);
     }
@@ -16,15 +29,17 @@ export abstract class GameObject extends EventEmitter implements IGameObject {
         return shortid.generate().toLowerCase().replace("_", "a").replace("-", "b");
     }
 
+    protected _meta: MD;
     private _id: string;
     private _type: GameObjectTypes;
-    private _meta: MetaData;
+    private tupdater: BaseTypedEmitter<GameObjectMessage, GameObjectMessage>;
 
-    protected constructor(private world: World, objectType: GameObjectTypes, meta?: MetaData, id?: string) {
+    protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
         super();
         this._id = id ? splitExtendedId(id).id : GameObject.generateId();
         this._type = objectType;
         this._meta = meta;
+        this.tupdater = new BaseTypedEmitter(this);
     }
 
     public get shortid() {
@@ -43,7 +58,7 @@ export abstract class GameObject extends EventEmitter implements IGameObject {
         return this._type;
     }
 
-    public get meta(): Readonly<MetaData> {
+    public get meta(): Readonly<MD> {
         return this._meta;
     }
 
@@ -60,35 +75,35 @@ export abstract class GameObject extends EventEmitter implements IGameObject {
     }
 
     public async rename(newName: string): Promise<boolean> {
-        const curMeta = await this.world.storage.getMeta(this);
+        const curMeta = await this.world.storage.getMeta(this) as MD;
         const oldName = curMeta.name;
         curMeta.name = newName;
         this._meta = curMeta;
         const updatedMeta = await this.world.storage.updateMeta(this, curMeta);
         const updatedIndex = await this.world.storage.updatePlayerNameIndex(oldName, this);
 
-        this.emit("rename", { oldName, newName });
+        this.tupdater.emit("rename", { oldName, newName });
 
         return updatedMeta && updatedIndex;
     }
 
-    public async move(newOwner: GameObject): Promise<boolean> {
-        const parent = await this.world.storage.getMeta(this, MetaKeys.PARENT);
+    public async move(newOwner: GameObject<any>): Promise<boolean> {
+        const parent = await this.world.storage.getMeta(this, "parent");
         const oldOwner = await this.world.getObjectById(parent);
-        const result = await this.world.storage.moveObject(this, oldOwner, newOwner);
+        const result = await this.world.storage.moveObject(this, newOwner, oldOwner);
         if (result) {
             this._meta.parent = newOwner.id;
         }
 
-        this.emit("move", { oldOwner, newOwner });
+        this.tupdater.emit("move", { oldOwner, newOwner });
 
         return result;
     }
 
-    public async contents(): Promise<GameObject[]> {
-        const contentIds = await this.world.storage.getContents(this);
+    public async getContents(type?: GameObjectTypes): Promise<Array<GameObject<any>>> {
+        const contentIds = await this.world.storage.getContents(this, type);
         const contentP = _.map(contentIds, (id) => {
-            return this.world.getObjectById(id);
+            return this.world.getObjectById(id, type);
         });
         return Promise.all(contentP);
     }

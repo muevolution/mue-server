@@ -9,7 +9,8 @@ gulp.task("clean", () => {
 });
 
 gulp.task("ts:lint", () => {
-    return gulp.src("src/*.ts")
+    const tsProject = ts.createProject("tsconfig.json");
+    return tsProject.src()
         .pipe(tslint({
             "configuration": "tslint.json"
         }))
@@ -17,7 +18,7 @@ gulp.task("ts:lint", () => {
 });
 
 gulp.task("ts:compile", ["clean"], () => {
-    const tsProject = ts.createProject("src/tsconfig.json");
+    const tsProject = ts.createProject("tsconfig.json");
     const tsResult = tsProject.src().pipe(sourcemaps.init()).pipe(tsProject());
 
     return tsResult.js.pipe(sourcemaps.write()).pipe(gulp.dest("build"));

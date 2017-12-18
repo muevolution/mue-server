@@ -5,7 +5,9 @@ export type PlayerId = string;
 export enum GameObjectTypes {
     ROOM = "r",
     PLAYER = "p",
-    ITEM = "i"
+    ITEM = "i",
+    SCRIPT = "s",
+    ACTION = "a"
 }
 
 export function splitExtendedId(id: string): {"id": string, "type"?: GameObjectTypes} {
@@ -21,17 +23,17 @@ export type HashResult<T extends string> = {
     [P in T]: string;
 };
 
-export enum MetaKeys {
-    NAME = "name",
-    CREATOR = "creator",
-    PARENT = "parent"
+export interface MetaData {
+    name: string;
+    creator: string;
+    parent: string;
 }
 
-export type MetaData = HashResult<MetaKeys>;
+export type MetaKeys = keyof MetaData;
 
-export enum ObjectEvents {
-    MOVE = "move",
-    RENAME = "rename"
+export interface GameObjectMessage {
+    rename: ObjectRenameEvent;
+    move: ObjectMoveEvent;
 }
 
 export interface IGameObject {
@@ -46,4 +48,13 @@ export interface ObjectMoveEvent {
 export interface ObjectRenameEvent {
     oldName?: string;
     newName: string;
+}
+
+export interface PlayerMessage extends GameObjectMessage {
+    quit: string;
+}
+
+export interface InterServerMessage {
+    event: string;
+    meta?: {};
 }

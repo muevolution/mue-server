@@ -65,6 +65,15 @@ setInterval(async () => {
     await world.publishMessage(`The time is ${new Date().toISOString()}`);
 }, 30000);
 
-server.listen(3000, () => {
-    Logger.info("Listening on port " + 3000);
+async function main() {
+    await world.init();
+
+    server.listen(3000, () => {
+        Logger.info("Listening on port " + 3000);
+    });
+}
+
+main().catch((err: any) => {
+    Logger.error("Got top level error", err);
+    process.exit(1);
 });
