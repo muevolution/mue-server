@@ -6,6 +6,7 @@ import * as http from "http";
 import * as _ from "lodash";
 import * as socketio from "socket.io";
 
+import { config } from "./config";
 import { initLogger, Logger } from "./logging";
 import { Player, Room, World } from "./objects";
 import { PubSub } from "./pubsub";
@@ -17,7 +18,7 @@ const app = aa(express());
 const server = new http.Server(app);
 const io = socketio(server);
 
-const redis = RedisConnection.connect({"host": "10.0.2.242", "port": 32769});
+const redis = RedisConnection.connect();
 const world = new World({ "redisConnection": redis });
 
 app.get("/", (req, res) => {
@@ -68,8 +69,8 @@ setInterval(async () => {
 async function main() {
     await world.init();
 
-    server.listen(3000, () => {
-        Logger.info("Listening on port " + 3000);
+    server.listen(config.port, () => {
+        Logger.info(`Listening on port ${config.port}`);
     });
 }
 

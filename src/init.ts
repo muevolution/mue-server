@@ -20,7 +20,7 @@ const readFile = (filename: string, encoding: string): Promise<string> => new Pr
 
 // Bring up a new environment
 
-const redis = RedisConnection.connect({"host": "10.0.2.242", "port": 32769});
+const redis = RedisConnection.connect();
 const world = new World({ "redisConnection": redis });
 
 async function main() {

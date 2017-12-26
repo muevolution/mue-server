@@ -5,6 +5,7 @@ import * as readline from "readline";
 import * as socketio from "socket.io-client";
 
 import { TypedEmitter } from "./common";
+import { config } from "./config";
 import { initLogger, Logger } from "./logging";
 import { AuthRequest, AuthResponse, ClientToServer, CommandRequest, ErrorResponse, ServerToClient } from "./netmodels";
 
@@ -16,7 +17,7 @@ const server = net.createServer((cSocket) => {
 
     let isAuthenticated = false;
 
-    const sSocket = socketio("http://localhost:3000/");
+    const sSocket = socketio(config.telnet.target_url);
     const tsock = new TypedEmitter<ClientToServer, ServerToClient>(sSocket);
 
     const rl = readline.createInterface({
@@ -103,5 +104,5 @@ server.on("error", (err) => {
     Logger.error("Server got error", err);
 });
 
-Logger.info("Listening on port 8888");
-server.listen(8888);
+Logger.info(`Listening on port ${config.telnet.port}`);
+server.listen(config.telnet.port);

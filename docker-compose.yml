@@ -14,7 +14,7 @@ services:
       - redis
     environment:
       - NODE_ENV=production
-      - MUE_REDIS_HOST=redis
+      - REDIS__HOST=redis
     restart: on-failure
 
 volumes:

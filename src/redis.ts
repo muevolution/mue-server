@@ -2,13 +2,15 @@ import * as bluebird from "bluebird";
 import * as _ from "lodash";
 import * as redis from "redis";
 
+import { config } from "./config";
+
 bluebird.promisifyAll(redis.RedisClient.prototype);
 bluebird.promisifyAll(redis.Multi.prototype);
 
 
 export class RedisConnection {
-    public static connect(opts: redis.ClientOpts) {
-        return new RedisConnection(redis.createClient(opts));
+    public static connect() {
+        return new RedisConnection(redis.createClient(config.redis));
     }
 
     public client: AsyncRedisClient;
