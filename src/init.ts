@@ -1,22 +1,11 @@
 import "source-map-support/register";
 
-import * as bluebird from "bluebird";
-import * as fs from "fs";
-
 import { initLogger, Logger } from "./logging";
-import { Action, Player, Room, Script, World } from "./objects";
-import { PubSub } from "./pubsub";
+import { Player, Room, RootFields, World } from "./objects";
 import { RedisConnection } from "./redis";
+import { updateScripts } from "./reload-script";
 
 initLogger();
-const readFile = (filename: string, encoding: string): Promise<string> => new Promise((resolve, reject) => {
-    fs.readFile(filename, encoding, (err, res) => {
-        if (err) {
-            return reject(err);
-        }
-        resolve(res);
-    });
-});
 
 // Bring up a new environment
 
@@ -37,26 +26,17 @@ async function main() {
     const player1 = await Player.create(world, "Hera", null, null);
     const player2 = await Player.create(world, "Kauko", player1, null);
     Logger.debug("Player is", [player1.toString(), player2.toString()]);
+    await world.storage.setRootValue(RootFields.GOD, player1.id);
 
     const room = await Room.create(world, "#0", player1);
     Logger.debug("Room is", room.toString());
+    await world.storage.setRootValue(RootFields.ROOT_ROOM, room.id);
 
     await player1.move(room);
     await player2.move(room);
     Logger.debug("Player moves complete");
 
-    const whoScript = await Script.create(world, "who.js", player1, player1);
-    await whoScript.updateCode(await readFile("scripts/who.js", "utf-8"));
-
-    const whoAction = await Action.create(world, "who", player1, room);
-    await whoAction.setTarget(whoScript);
-
-    const sayScript = await Script.create(world, "say.js", player1, player1);
-    await sayScript.updateCode(await readFile("scripts/say.js", "utf-8"));
-
-    const sayAction = await Action.create(world, "say", player1, room);
-    await sayAction.setTarget(sayScript);
-
+    await updateScripts(world, player1, room, room);
     Logger.debug("Code load complete");
 }
 

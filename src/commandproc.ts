@@ -3,7 +3,7 @@ import * as _ from "lodash";
 import * as builtins from "./builtins";
 import { Logger } from "./logging";
 import { CommandRequest, ExpandedCommandRequest, InteriorMessage, LocalCommand, ShortCommandRequest } from "./netmodels";
-import { GameObject, GameObjectTypes, Player, Room, Script, World } from "./objects";
+import { Action, GameObject, GameObjectTypes, Player, Room, Script, World } from "./objects";
 import { ScriptManager } from "./scriptmanager";
 
 export class CommandProcessor {
@@ -68,7 +68,7 @@ export class CommandProcessor {
     }
 
     async actionCommands(player: Player, command: LocalCommand): Promise<boolean> {
-        const action = await player.find(command.command);
+        const action = await player.find(command.command, GameObjectTypes.ACTION) as Action;
         if (!action || !action.target) {
             return false;
         }

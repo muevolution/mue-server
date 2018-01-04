@@ -74,6 +74,10 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return this.world.storage.setProps(this, props);
     }
 
+    public matchName(term: string): boolean {
+        return term.trim().toLowerCase() === this.name.toLowerCase();
+    }
+
     public async rename(newName: string): Promise<boolean> {
         const curMeta = await this.world.storage.getMeta(this) as MD;
         const oldName = curMeta.name;

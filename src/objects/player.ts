@@ -51,36 +51,46 @@ export class Player extends GameObject {
         return super.parent as Promise<Room>;
     }
 
-    async find(command: string): Promise<Action> {
+    async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
         // Search on player first
-        const firstSearch = await this.findIn(command);
+        const firstSearch = await this.findIn(term, type);
         if (firstSearch) {
             return firstSearch;
         }
 
         // Now search the room tree
-        const parent = await this.parent;
-        return parent.find(command);
+        if (type === GameObjectTypes.ACTION) {
+            const parent = await this.parent;
+            return parent.find(term, type);
+        }
     }
 
-    async findIn(command: string): Promise<Action> {
+    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject> {
         const contents = await this.getContents();
         if (_.isEmpty(contents)) {
             return null;
         }
 
         // Test this object's actions
-        const actions = _.filter(contents, (c) => c.type === GameObjectTypes.ACTION) as Action[];
-        const matchedAction = _.find(actions, (a) => a.matchCommand(command));
-        if (matchedAction) {
-            return matchedAction;
+        if (type === GameObjectTypes.ACTION) {
+            const actions = _.filter(contents, (c) => c.type === GameObjectTypes.ACTION) as Action[];
+            const matchedAction = _.find(actions, (a) => a.matchCommand(term));
+            if (matchedAction) {
+                return matchedAction;
+            }
+        }
+
+        // Test general item names
+        const inv = _.find(contents, (c) => c.type === type && c.matchName(term));
+        if (inv) {
+            return inv;
         }
 
         // Test contained item's actions
         // TODO: Compose this better
         const items = _.filter(contents, (c) => c.type === GameObjectTypes.ITEM) as Item[];
         for (const item of items) {
-            const fi = await item.findIn(command);
+            const fi = await item.findIn(term, type);
             if (fi) {
                 return fi;
             }

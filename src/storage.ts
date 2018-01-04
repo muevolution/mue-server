@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 import { Multi } from "redis";
 
-import { GameObject, GameObjectTypes, MetaData, MetaKeys, splitExtendedId } from "./objects";
+import { GameObject, GameObjectTypes, MetaData, MetaKeys, RootFields, splitExtendedId } from "./objects";
 import { AsyncRedisClient, AsyncRedisMulti } from "./redis";
 
 export class Storage {
@@ -37,6 +37,10 @@ export class Storage {
 
     private static getByNameKeyStructure(type: GameObjectTypes) {
         return `i:${type}:names`;
+    }
+
+    private static getRootKey() {
+        return `i:root`;
     }
 
     constructor(private client: AsyncRedisClient) {
@@ -162,6 +166,14 @@ export class Storage {
             await this.client.hsetAsync(key, meta, value);
             return true;
         }
+    }
+
+    getRootValue(field: RootFields) {
+        return this.client.hgetAsync(Storage.getRootKey(), field);
+    }
+
+    setRootValue(field: RootFields, value: string) {
+        return this.client.hsetAsync(Storage.getRootKey(), field, value);
     }
 
     updateHashInMulti<MD extends MetaData>(multi: Multi, key: string, meta: MD) {

@@ -9,7 +9,7 @@ import { Storage } from "../storage";
 import { Action } from "./action";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
-import { GameObjectTypes, InterServerMessage, MetaData, splitExtendedId } from "./models";
+import { GameObjectTypes, InterServerMessage, MetaData, RootFields, splitExtendedId } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
 import { Script } from "./script";
@@ -85,6 +85,15 @@ export class World {
         return Room.imitate(this, id);
     }
 
+    public async getRootRoom(): Promise<Room> {
+        const rootRoomId = await this.storage.getRootValue(RootFields.ROOT_ROOM);
+        if (!rootRoomId) {
+            throw new Error("Unable to find root room.");
+        }
+
+        return this.getRoomById(rootRoomId);
+    }
+
     public getItemById(id: string): Promise<Item> {
         return Item.imitate(this, id);
     }
@@ -146,5 +155,10 @@ export class World {
     public async getConnectedPlayerIds(): Promise<string[]> {
         const players = await this.opts.redisConnection.client.pubsubAsync("channels", "c:p:*");
         return _.map(players, (ch) => ch.substring(2));
+    }
+
+    public async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
+        const rootRoom = await this.getRootRoom();
+        return rootRoom.find(term, type);
     }
 }

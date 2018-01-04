@@ -17,7 +17,7 @@ const CODE_WRAP_HEAD = `
 
 const CODE_WRAP_TAIL = `
 
-/* end */
+    /* end */
 })();
 `;
 

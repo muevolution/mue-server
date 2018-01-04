@@ -10,6 +10,11 @@ export enum GameObjectTypes {
     ACTION = "a"
 }
 
+export enum RootFields {
+    ROOT_ROOM = "root_room",
+    GOD = "god"
+}
+
 export function splitExtendedId(id: string): {"id": string, "type"?: GameObjectTypes} {
     const a = id.split(":");
     if (a.length < 2) {

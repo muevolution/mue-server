@@ -35,8 +35,15 @@ export class Item extends GameObject {
         return super.parent as Promise<Room | Player | Item>;
     }
 
-    async findIn(command: string): Promise<Action> {
-        const contents = await this.getContents(GameObjectTypes.ACTION) as Action[];
-        return _.find(contents, (a) => a.matchCommand(command));
+    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject> {
+        const contents = await this.getContents();
+
+        if (type === GameObjectTypes.ACTION) {
+            const actions = _.filter(contents, (c) => c.type === GameObjectTypes.ACTION) as Action[];
+            return _.find(actions, (a) => a.matchCommand(term));
+        }
+
+        // Test general item names
+        return _.find(contents, (c) => c.type === type && c.matchName(term));
     }
 }
