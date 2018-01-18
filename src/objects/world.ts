@@ -1,9 +1,9 @@
 import * as _ from "lodash";
 
+import { CommandRequest, InteriorMessage } from "../../client_types";
 import { CommandProcessor } from "../commandproc";
 import { BaseTypedEmitter } from "../common";
 import { Logger } from "../logging";
-import { CommandRequest, InteriorMessage } from "../netmodels";
 import { AsyncRedisClient, RedisConnection } from "../redis";
 import { Storage } from "../storage";
 import { Action } from "./action";

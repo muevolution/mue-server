@@ -1,0 +1,8 @@
+{
+  "name": "mue-client-types",
+  "version": "1.0.0",
+  "description": "MUE Client Types",
+  "author": "Kauko <kauko@biosynth.link>",
+  "license": "MIT",
+  "types": "index.d.ts"
+}

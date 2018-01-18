@@ -1,6 +1,3 @@
-import { CommandProcessor } from "./commandproc";
-import { BaseTypedEmitter, TypedEmitter } from "./common";
-import { Logger } from "./logging";
 import {
     AuthRequest,
     AuthResponse,
@@ -9,7 +6,10 @@ import {
     ErrorResponse,
     InteriorMessage,
     ServerToClient
-} from "./netmodels";
+} from "../client_types";
+import { CommandProcessor } from "./commandproc";
+import { BaseTypedEmitter, TypedEmitter } from "./common";
+import { Logger } from "./logging";
 import { ObjectMoveEvent, Player, PlayerMessage, World } from "./objects";
 import { AsyncRedisClient } from "./redis";
 

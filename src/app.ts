@@ -6,6 +6,7 @@ import * as http from "http";
 import * as _ from "lodash";
 import * as socketio from "socket.io";
 
+import { BridgeArbitrator } from "./bridge";
 import { config } from "./config";
 import { initLogger, Logger } from "./logging";
 import { Player, Room, World } from "./objects";
@@ -16,7 +17,6 @@ initLogger();
 
 const app = aa(express());
 const server = new http.Server(app);
-const io = socketio(server);
 
 const redis = RedisConnection.connect();
 const world = new World({ "redisConnection": redis });
@@ -56,6 +56,7 @@ app.get("/rooms/:roomId", async (req, res) => {
     res.json(output);
 });
 
+const io = socketio(server);
 io.on("connection", (socket) => {
     Logger.debug("Got a connection");
     const ps = new PubSub(redis.client, socket, world);

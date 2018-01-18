@@ -1,7 +1,7 @@
 {
-  "name": "mue",
+  "name": "mue-server",
   "version": "1.0.0",
-  "description": "Multi User Evolution",
+  "description": "Multi User Evolution Server",
   "author": "Kauko <kauko@biosynth.link>",
   "license": "MIT",
   "main": "build/app.js",
@@ -33,7 +33,6 @@
     "@types/redis": "^2.8.3",
     "@types/shortid": "0.0.29",
     "@types/socket.io": "^1.4.31",
-    "@types/socket.io-client": "^1.4.32",
     "@types/winston": "^2.3.7",
     "del": "^3.0.0",
     "gulp": "^3.9.1",
@@ -41,7 +40,6 @@
     "gulp-tslint": "^8.1.2",
     "gulp-typescript": "^3.2.3",
     "nodemon": "^1.14.3",
-    "socket.io-client": "^2.0.4",
     "tslint": "^5.8.0",
     "tslint-language-service": "^0.9.7",
     "typescript": "^2.6.2"

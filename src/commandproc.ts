@@ -1,8 +1,8 @@
 import * as _ from "lodash";
 
+import { CommandRequest, ExpandedCommandRequest, InteriorMessage, LocalCommand, ShortCommandRequest } from "../client_types";
 import * as builtins from "./builtins";
 import { Logger } from "./logging";
-import { CommandRequest, ExpandedCommandRequest, InteriorMessage, LocalCommand, ShortCommandRequest } from "./netmodels";
 import { Action, GameObject, GameObjectTypes, Player, Room, Script, World } from "./objects";
 import { ScriptManager } from "./scriptmanager";
 

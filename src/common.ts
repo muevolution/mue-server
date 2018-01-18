@@ -2,8 +2,8 @@
 
 import { EventEmitter } from "events";
 
+import { MessageEvent } from "../client_types";
 import { Logger } from "./logging";
-import { MessageEvent } from "./netmodels";
 
 interface CompatibleEmitter {
     emit(event: string, ...args: any[]): any;

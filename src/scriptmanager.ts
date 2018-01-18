@@ -1,8 +1,8 @@
 import * as Bluebird from "bluebird";
 import { VM } from "vm2";
 
+import { LocalCommand, MessageFormats } from "../client_types";
 import { Logger } from "./logging";
-import { LocalCommand, MessageFormats } from "./netmodels";
 import { GameObjectTypes, Player, Script, World } from "./objects";
 
 // TODO: Some form of timeslicing per player
