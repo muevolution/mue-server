@@ -23,17 +23,9 @@ export class World {
     }) {
     }
 
-    public async init() {
-        this.isc = this.opts.redisConnection.client.duplicate();
-        await this.isc.publishAsync("c:isc", JSON.stringify({"event": "joined"} as InterServerMessage));
-        await this.isc.subscribeAsync("c:isc");
-
-        // TODO: Move the handler elsewhere
-        this.isc.on("message", (channel, message: InterServerMessage) => {
-            if (message.event === "joined") {
-                Logger.info("Server joined cluster");
-            }
-        });
+    public async init(): Promise<void> {
+        Logger.info(`ISC> Joining cluster with ${await this.getActiveServers()} active servers`);
+        await this.configureInterServer();
     }
 
     public get storage(): Storage {
@@ -160,5 +152,30 @@ export class World {
     public async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
         const rootRoom = await this.getRootRoom();
         return rootRoom.find(term, type);
+    }
+
+    public async invalidateScriptCache(): Promise<void> {
+        await this.sendInterServer("invalidate_script");
+    }
+
+    private async configureInterServer() {
+        this.isc = this.opts.redisConnection.client.duplicate();
+        await this.sendInterServer("joined");
+        await this.isc.subscribeAsync("c:isc");
+
+        // TODO: Move the handler elsewhere
+        this.isc.on("message", async (channel, message) => {
+            const msg = JSON.parse(message) as InterServerMessage;
+            if (msg.event === "joined") {
+                Logger.info(`ISC> New server joined cluster`);
+            } else if (msg.event === "invalidate_script") {
+                Logger.info("ISC> Script cache invalidated was requested");
+                Script.invalidateCache();
+            }
+        });
+    }
+
+    private async sendInterServer(event: string, meta?: {}) {
+        return this.opts.redisConnection.client.publishAsync("c:isc", JSON.stringify({event, meta} as InterServerMessage));
     }
 }

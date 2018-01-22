@@ -7,7 +7,7 @@ import { Player } from "./player";
 import { Room } from "./room";
 import { World } from "./world";
 
-const SCRIPT_CACHE = {} as {[id: string]: Script};
+let SCRIPT_CACHE = {} as {[id: string]: Script};
 
 const CODE_WRAP_HEAD = `
 (async function() {
@@ -49,6 +49,10 @@ export class Script extends GameObject {
         p.loadCode(code);
         SCRIPT_CACHE[id] = p;
         return p;
+    }
+
+    static invalidateCache() {
+        SCRIPT_CACHE = {};
     }
 
     private _compiled: VMScript;

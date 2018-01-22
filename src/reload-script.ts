@@ -47,5 +47,6 @@ async function updateScript(world: World, filename: string, creator: Player, par
 
 export async function updateScripts(world: World, creator: Player, parent: Player | Room | Item, actionDestination?: Player | Room | Item) {
     const scripts = await getScripts();
-    return Promise.all(_.map(scripts, (s) => updateScript(world, s, creator, parent, actionDestination)));
+    await Promise.all(_.map(scripts, (s) => updateScript(world, s, creator, parent, actionDestination)));
+    await world.invalidateScriptCache();
 }

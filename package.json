@@ -8,7 +8,8 @@
   "scripts": {
     "start": "node build/app.js",
     "debug": "node --inspect build/app.js",
-    "build": "gulp build"
+    "build": "gulp build",
+    "redeploy-scripts": "node build/init-reload-scripts.js"
   },
   "dependencies": {
     "bluebird": "^3.5.1",

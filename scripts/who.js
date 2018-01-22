@@ -1,4 +1,4 @@
 /// worldscript:who
 
 const players = await world.connectedPlayers();
-world.tell("Connected players: " + (players || ["none"]).join(", "), script.thisPlayer, { players });
+world.tell("Connected players: " + (await Promise.all((players || ["none"]).map(await world.getPlayerNameFromId))).join(", "), script.thisPlayer, { players });
