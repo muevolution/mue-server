@@ -1,0 +1,46 @@
+pipeline:
+  build:
+    image: node:carbon-alpine
+    commands:
+      - npm install
+      - node_modules/.bin/gulp build
+
+  publish_master:
+    image: plugins/docker
+    registry: drone-registry.neocodenetworks.org
+    repo: drone-registry.neocodenetworks.org/mue/server
+    secrets: [ docker_username, docker_password ]
+    tag: [ latest, master ]
+    when:
+      branch: master
+      event: push
+
+  publish_branch:
+    image: plugins/docker
+    registry: drone-registry.neocodenetworks.org
+    repo: drone-registry.neocodenetworks.org/mue/server
+    secrets: [ docker_username, docker_password ]
+    tag: ${DRONE_BRANCH}
+    when:
+      branch:
+        exclude: master
+      event: push
+
+  publish_tag:
+    image: plugins/docker
+    registry: drone-registry.neocodenetworks.org
+    repo: drone-registry.neocodenetworks.org/mue/server
+    secrets: [ docker_username, docker_password ]
+    tag: ${DRONE_TAG}
+    when:
+      event: tag
+
+  publish_to_prod:
+    image: plugins/docker
+    registry: drone-registry.neocodenetworks.org
+    repo: drone-registry.neocodenetworks.org/mue/server
+    secrets: [ docker_username, docker_password ]
+    tag: prod
+    when:
+      event: deployment
+      environment: production
