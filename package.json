@@ -1,5 +1,5 @@
 {
-  "name": "mue-server",
+  "name": "@mue/server",
   "version": "1.0.0",
   "description": "Multi User Evolution Server",
   "author": "Kauko <kauko@biosynth.link>",
