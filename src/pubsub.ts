@@ -116,7 +116,7 @@ export class PubSub {
 
         this.tsock.on("command", (data) => {
             if (!this._player) {
-                return this.tsock.emit("auth", { "success": false, "message": "You have not yet authenticated.", "code": 101 })
+                return this.tsock.emit("auth", { "success": false, "message": "You have not yet authenticated.", "code": 101 });
             }
 
             return this.world.command(this.player, data);
