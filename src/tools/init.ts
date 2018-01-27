@@ -1,9 +1,9 @@
 import "source-map-support/register";
 
-import { initLogger, Logger } from "./logging";
-import { Player, Room, RootFields, World } from "./objects";
-import { RedisConnection } from "./redis";
-import { updateScripts } from "./reload-script";
+import { initLogger, Logger } from "../logging";
+import { Player, Room, RootFields, World } from "../objects";
+import { RedisConnection } from "../redis";
+import { updateScripts } from "../reload-script";
 
 initLogger();
 
