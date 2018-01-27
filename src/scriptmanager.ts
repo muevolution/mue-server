@@ -2,6 +2,7 @@ import * as Bluebird from "bluebird";
 import { VM } from "vm2";
 
 import { LocalCommand, MessageFormats } from "../client_types";
+import { JsSandbox } from "./js-sandbox";
 import { Logger } from "./logging";
 import { GameObjectTypes, Player, Script, World } from "./objects";
 
@@ -14,51 +15,71 @@ export class ScriptManager {
     }
 
     public async runScript(script: Script, runBy: Player, command: LocalCommand) {
+        const executionList: Array<Promise<any>> = [];
+
         this.vm = new VM({
             "timeout": 10000,
-            "sandbox": this.getSandbox(script, runBy, command)
+            "sandbox": this.getSandbox(script, runBy, command, executionList)
         });
 
         await this.vm.run(script.compiled);
+        await Bluebird.any(executionList);
     }
 
     /* Sandbox tenents
        Never give the world a shared game object (World, GameObject, etc), always pass IDs
        Don't trust script input or execution
     */
-    private getSandbox(thisScript: Script, runBy: Player, command: LocalCommand): {} {
+    private getSandbox(thisScript: Script, runBy: Player, command: LocalCommand, executionList: Array<Promise<any>>): JsSandbox {
+        const user_log = async (level: string, ...args: any[]) => {
+            await this.world.publishMessage(`Script>${level}> ${JSON.stringify(args)}`, runBy);
+        };
+
+        // Wrapper for one-shot functions to prevent needing an await in user code
+        const wrap_async = (result: Promise<void>) => {
+            const p = result.catch(async (err) => {
+                await user_log("error", err.message);
+                return Promise.resolve();
+            });
+            executionList.push(p);
+        };
+
+        const world_tell = async (
+            message: string,
+            target?: string,
+            meta?: {[key: string]: any},
+            extendedContent?: string,
+            extendedFormat?: string | MessageFormats
+        ) => {
+            // TODO: Check that the user actually has permission to send to this target
+            // It should either be to themselves, another player(?), or the room they're in
+            const targetObj = target ? await this.world.getObjectById(target) : runBy;
+            if (!targetObj) {
+                throw new Error("Target not found");
+            }
+            if (extendedContent || extendedFormat) {
+                message = ""; // TODO: Figure out how to properly handle extended messages
+            }
+            await this.world.publishMessage({
+                message,
+                meta,
+                extendedContent,
+                extendedFormat,
+                "source": runBy.id,
+                "script": thisScript.id
+            }, targetObj);
+        };
+
+        // TODO: Mask functions from client (proxy?)
         return {
             "world": {
-                "tell": async (message: string, target?: string, meta?: {[key: string]: any}) => {
-                    // TODO: Check that the user actually has permission to send to this target
-                    // It should either be to themselves, another player(?), or the room they're in
-                    const targetObj = target ? await this.world.getObjectById(target) : runBy;
-                    if (!targetObj) {
-                        throw new Error("Target not found");
-                    }
-                    return this.world.publishMessage({
-                        message,
-                        meta,
-                        "source": runBy.id,
-                        "script": thisScript.id
-                    }, targetObj);
+                "tell": (message: string, target?: string, meta?: {[key: string]: any}) => {
+                    wrap_async(world_tell(message, target, meta));
                 },
                 "tellExtended": async (extendedContent: string, extendedFormat: string | MessageFormats, target?: string, meta?: {[key: string]: any}) => {
-                    const targetObj = target ? await this.world.getObjectById(target) : runBy;
-                    if (!targetObj) {
-                        throw new Error("Target not found");
-                    }
-                    const message = ""; // TODO: Figure out how to properly handle extended messages
-                    return this.world.publishMessage({
-                        message,
-                        meta,
-                        extendedContent,
-                        extendedFormat,
-                        "source": runBy.id,
-                        "script": thisScript.id
-                    }, targetObj);
+                    wrap_async(world_tell(null, target, meta, extendedContent, extendedFormat));
                 },
-                "connectedPlayers": async () => {
+                "connectedPlayers": () => {
                     return this.world.getConnectedPlayerIds();
                 },
                 // TODO: These should probably just be generic for objects
@@ -95,13 +116,13 @@ export class ScriptManager {
             },
             "Log": {
                 "debug": (...args: any[]) => {
-                    Logger.debug("Script>DEBUG>", ...args);
+                    wrap_async(user_log("debug", ...args));
                 },
                 "info": (...args: any[]) => {
-                    Logger.debug("Script>INFO>", ...args);
+                    wrap_async(user_log("info", ...args));
                 },
                 "error": (...args: any[]) => {
-                    Logger.debug("Script>ERROR>", ...args);
+                    wrap_async(user_log("error", ...args));
                 }
             }
         };
