@@ -1,5 +1,6 @@
 import * as _ from "lodash";
 
+import { InteriorMessage } from "../../client_types";
 import { Action } from "./action";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
@@ -49,6 +50,27 @@ export class Player extends GameObject {
 
     public get parent(): Promise<Room> {
         return super.parent as Promise<Room>;
+    }
+
+    async move(newOwner: Room) {
+        const result = await super.move(newOwner) as {oldOwner?: Room, newOwner: Room};
+
+        // Notify rooms of change
+        // TODO: Make sure the current user doesn't the third person join/part messages
+        if (result) {
+            if (result.oldOwner) {
+                await this.world.publishMessage(`${this.name} has left.`, result.oldOwner);
+            }
+
+            await this.sendMessage(`You arrive in ${result.newOwner.name}.`);
+            await this.world.publishMessage(`${this.name} has arrived.`, result.newOwner);
+        }
+
+        return result;
+    }
+
+    public async sendMessage(message: InteriorMessage | string): Promise<boolean> {
+        return this.world.publishMessage(message, this);
     }
 
     async find(term: string, type?: GameObjectTypes): Promise<GameObject> {

@@ -91,17 +91,19 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return updatedMeta && updatedIndex;
     }
 
-    public async move(newOwner: GameObject<any>): Promise<boolean> {
+    public async move(newOwner: GameObject<any>): Promise<{oldOwner?: GameObject<any>, newOwner: GameObject<any>}> {
         const parent = await this.world.storage.getMeta(this, "parent");
         const oldOwner = await this.world.getObjectById(parent);
         const result = await this.world.storage.moveObject(this, newOwner, oldOwner);
-        if (result) {
-            this._meta.parent = newOwner.id;
+        if (!result) {
+            return null;
         }
 
-        this.tupdater.emit("move", { oldOwner, newOwner });
+        this._meta.parent = newOwner.id;
 
-        return result;
+        const output = { oldOwner, newOwner };
+        this.tupdater.emit("move", output);
+        return output;
     }
 
     public async getContents(type?: GameObjectTypes): Promise<Array<GameObject<any>>> {

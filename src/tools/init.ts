@@ -1,7 +1,7 @@
 import "source-map-support/register";
 
 import { initLogger, Logger } from "../logging";
-import { Player, Room, RootFields, World } from "../objects";
+import { Action, Player, Room, RootFields, World } from "../objects";
 import { RedisConnection } from "../redis";
 import { updateScripts } from "../reload-script";
 
@@ -35,6 +35,14 @@ async function main() {
     await player1.move(room);
     await player2.move(room);
     Logger.debug("Player moves complete");
+
+    const room2 = await Room.create(world, "First Room", player1, room);
+
+    const room1act = await Action.create(world, "roomzero", player1, room2);
+    await room1act.setTarget(room);
+
+    const room2act = await Action.create(world, "roomone", player1, room);
+    await room2act.setTarget(room2);
 
     await updateScripts(world, player1, room, room);
     Logger.debug("Code load complete");

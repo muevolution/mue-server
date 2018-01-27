@@ -1,6 +1,7 @@
 // tslint:disable:max-classes-per-file
 
 import { EventEmitter } from "events";
+import * as util from "util";
 
 import { MessageEvent } from "../client_types";
 import { Logger } from "./logging";
@@ -9,7 +10,7 @@ import { AsyncRedisClient } from "./redis";
 export function RedisClientDebug(client: AsyncRedisClient, msg: {}) {
     // TODO: Add debug toggle
     if (!client) { return; }
-    client.publish("c:debug", JSON.stringify(msg), (err, reply) => {
+    client.publish("c:debug", util.inspect(msg), (err, reply) => {
         // Don't actually care, this is throwaway debugging
     });
 }
@@ -34,7 +35,7 @@ export class BaseTypedEmitter<O, I> {
                 RedisClientDebug(this.redisClient, {"type": "inbound", event, "data": data});
                 return d;
             }).catch((err) => {
-                RedisClientDebug(this.redisClient, {"type": "inbound", event, "error": true});
+                RedisClientDebug(this.redisClient, {"type": "inbound", event, "error": err.message});
                 if (errorHandler) {
                     errorHandler(err);
                 } else {
