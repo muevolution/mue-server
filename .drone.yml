@@ -1,11 +1,24 @@
 pipeline:
+  npm_auth:
+    image: robertstettner/drone-npm-auth
+    registry: https://drone-npm.neocodenetworks.org
+    secrets: [ npm_username, npm_password, npm_email ]
+
   build:
     image: node:carbon-alpine
     commands:
       - npm install
       - node_modules/.bin/gulp build
 
-  publish_master:
+  publish_npm:
+    image: plugins/npm
+    registry: https://drone-npm.neocodenetworks.org
+    folder: client_types
+    when:
+      event: deployment
+      environment: production-npm
+
+  publish_docker_master:
     image: plugins/docker
     registry: drone-registry.neocodenetworks.org
     repo: drone-registry.neocodenetworks.org/mue/server
@@ -15,7 +28,7 @@ pipeline:
       branch: master
       event: push
 
-  publish_branch:
+  publish_docker_branch:
     image: plugins/docker
     registry: drone-registry.neocodenetworks.org
     repo: drone-registry.neocodenetworks.org/mue/server
@@ -26,7 +39,7 @@ pipeline:
         exclude: master
       event: push
 
-  publish_tag:
+  publish_docker_tag:
     image: plugins/docker
     registry: drone-registry.neocodenetworks.org
     repo: drone-registry.neocodenetworks.org/mue/server
@@ -35,7 +48,7 @@ pipeline:
     when:
       event: tag
 
-  publish_to_prod:
+  publish_docker_to_prod:
     image: plugins/docker
     registry: drone-registry.neocodenetworks.org
     repo: drone-registry.neocodenetworks.org/mue/server
