@@ -4,6 +4,15 @@ import { EventEmitter } from "events";
 
 import { MessageEvent } from "../client_types";
 import { Logger } from "./logging";
+import { AsyncRedisClient } from "./redis";
+
+export function RedisClientDebug(client: AsyncRedisClient, msg: {}) {
+    // TODO: Add debug toggle
+    if (!client) { return; }
+    client.publish("c:debug", JSON.stringify(msg), (err, reply) => {
+        // Don't actually care, this is throwaway debugging
+    });
+}
 
 interface CompatibleEmitter {
     emit(event: string, ...args: any[]): any;
@@ -11,38 +20,27 @@ interface CompatibleEmitter {
 }
 
 export class BaseTypedEmitter<O, I> {
-    constructor(protected socket: CompatibleEmitter) {}
+    constructor(protected socket: CompatibleEmitter, protected redisClient?: AsyncRedisClient) {}
 
     public emit<T extends keyof O, K extends O[T]>(event: T, data: K) {
+        RedisClientDebug(this.redisClient, {"type": "outbound", event, data});
         return this.socket.emit(event, data);
     }
 
     public on<T extends keyof I, K extends I[T]>(event: T, listener: (data: K) => (Promise<any> | void), errorHandler?: (err: any) => any) {
         return this.socket.on(event, (data: K) => {
-            let res: (Promise<any> | void);
-            try {
-                res = listener(data);
-            } catch (err) {
+            const res = Promise.resolve(listener(data));
+            res.then((d) => {
+                RedisClientDebug(this.redisClient, {"type": "inbound", event, "data": data});
+                return d;
+            }).catch((err) => {
+                RedisClientDebug(this.redisClient, {"type": "inbound", event, "error": true});
                 if (errorHandler) {
                     errorHandler(err);
                 } else {
                     Logger.error("typedOn got error", err);
-                    throw err;
                 }
-
-                return;
-            }
-
-            // Handle as a promise
-            if (res && res.then) {
-                res.catch((err) => {
-                    if (errorHandler) {
-                        errorHandler(err);
-                    } else {
-                        Logger.error("typedOn got error", err);
-                    }
-                });
-            }
+            });
         });
     }
 }

@@ -46,6 +46,7 @@ export interface AsyncRedisClient extends redis.RedisClient {
     pubsubAsync(command: "channels", pattern?: string): Promise<string[]>;
     pubsubAsync(command: "numsub", ...channels: string[]): Promise<Array<string|number>>;
     subscribeAsync(channel: string | string[]): Promise<string>;
+    psubscribeAsync(pattern: string | string[]): Promise<string>;
     unsubscribeAsync(channel: string | string[]): Promise<string>;
     publishAsync(channel: string, value: string): Promise<number>;
 

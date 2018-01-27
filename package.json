@@ -9,6 +9,7 @@
     "start": "node build/app.js",
     "debug": "node --inspect build/app.js",
     "build": "gulp build",
+    "activity-monitor": "node build/tools/activity-monitor.js",
     "redeploy-scripts": "node build/tools/init-reload-scripts.js"
   },
   "dependencies": {

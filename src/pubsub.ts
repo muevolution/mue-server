@@ -27,7 +27,7 @@ export class PubSub {
         private world: World
     ) {
         this.client = baseclient.duplicate();
-        this.tsock = new TypedEmitter(socket);
+        this.tsock = new TypedEmitter(socket, baseclient);
 
         this.boundPlayerMoveEvent = this.playerMoveEvent.bind(this);
         this.boundPlayerQuitEvent = this.quit.bind(this);
@@ -39,7 +39,7 @@ export class PubSub {
 
     subscribe(player: Player, ...channels: string[]) {
         this._player = player;
-        this.tupdater = new BaseTypedEmitter(player);
+        this.tupdater = new BaseTypedEmitter(player, this.baseclient);
         const result = this.client.subscribeAsync(channels);
         if (!result) {
             return false;
@@ -96,11 +96,6 @@ export class PubSub {
             }
         });
 
-        this.tsock.on("connection", () => {
-            Logger.verbose("Socket was connected");
-            this.tsock.emit("message", {"target": "you", "message": "Welcome!"});
-        });
-
         this.tsock.on("auth", async (data) => {
             const cp = new CommandProcessor(this.world);
             const player = await cp.processLogin(data.username, data.password);
@@ -120,6 +115,10 @@ export class PubSub {
         });
 
         this.tsock.on("command", (data) => {
+            if (!this._player) {
+                return this.tsock.emit("auth", { "success": false, "message": "You have not yet authenticated.", "code": 101 })
+            }
+
             return this.world.command(this.player, data);
         });
 
