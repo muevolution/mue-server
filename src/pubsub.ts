@@ -1,15 +1,13 @@
 import {
-    AuthRequest,
-    AuthResponse,
     ClientToServer,
-    CommandRequest,
+    CommunicationMessage,
     ErrorResponse,
     InteriorMessage,
     ServerToClient
 } from "../client_types";
 import { CommandProcessor } from "./commandproc";
 import { BaseTypedEmitter, TypedEmitter } from "./common";
-import { Logger } from "./logging";
+import * as formatter from "./formatter";
 import { ObjectMoveEvent, Player, PlayerMessage, World } from "./objects";
 import { AsyncRedisClient } from "./redis";
 
@@ -77,21 +75,37 @@ export class PubSub {
                 displayedChannel = "you";
             }
 
-            const msgObj = JSON.parse(message);
-            const msgString = msgObj.message;
+            const msgObj = JSON.parse(message) as InteriorMessage;
             const eventTarget = msgObj.targetChannel ? msgObj.targetChannel : "message";
 
             switch (eventTarget) {
                 case "message":
-                    this.tsock.emit("message", {
+                    const msgString = this.getLocalMessage(msgObj);
+                    if (!msgString) {
+                        break;
+                    }
+
+                    let extendedFormat;
+                    if (msgObj.extendedFormat) {
+                        if (msgObj.source === this.player.id) {
+                            extendedFormat = msgObj.extendedFormat.firstPerson;
+                        } else {
+                            extendedFormat = msgObj.extendedFormat.thirdPerson;
+                        }
+                    }
+
+                    const output: CommunicationMessage = {
                         "target": displayedChannel,
+                        extendedFormat,
+                        "extendedContent": msgObj.extendedContent,
                         "message": msgString,
                         "source": msgObj.source,
                         "meta": msgObj.meta
-                    });
+                    };
+                    this.tsock.emit("message", output);
                     break;
                 case "echo":
-                    this.tsock.emit("echo", msgString);
+                    this.tsock.emit("echo", msgObj.message);
                     break;
             }
         });
@@ -141,5 +155,20 @@ export class PubSub {
         }
 
         await this.client.subscribeAsync(`c:${e.newOwner.id}`);
+    }
+
+    private getLocalMessage(message: InteriorMessage) {
+        if (message.extendedFormat && message.extendedContent) {
+            const formatted = formatter.format(message.extendedFormat, message.extendedContent);
+            if (message.source === this.player.id) {
+                return formatted.firstPerson;
+            } else {
+                return formatted.thirdPerson;
+            }
+        } else if (message.message) {
+            return message.message;
+        }
+
+        return null;
     }
 }

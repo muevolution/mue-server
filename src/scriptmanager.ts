@@ -1,7 +1,7 @@
 import * as Bluebird from "bluebird";
 import { VM } from "vm2";
 
-import { LocalCommand, MessageFormats } from "../client_types";
+import { LocalCommand, MessageFormats, InteriorMessage } from "../client_types";
 import { JsSandbox } from "./js-sandbox";
 import { Logger } from "./logging";
 import { GameObjectTypes, Player, Script, World } from "./objects";
@@ -45,11 +45,11 @@ export class ScriptManager {
         };
 
         const world_tell = async (
-            message: string,
+            message?: string,
             target?: string,
             meta?: {[key: string]: any},
-            extendedContent?: string,
-            extendedFormat?: string | MessageFormats
+            extendedFormat?: MessageFormats,
+            extendedContent?: {[key: string]: any},
         ) => {
             // TODO: Check that the user actually has permission to send to this target
             // It should either be to themselves, another player(?), or the room they're in
@@ -57,17 +57,15 @@ export class ScriptManager {
             if (!targetObj) {
                 throw new Error("Target not found");
             }
-            if (extendedContent || extendedFormat) {
-                message = ""; // TODO: Figure out how to properly handle extended messages
-            }
-            await this.world.publishMessage({
+            const im: InteriorMessage = {
                 message,
                 meta,
                 extendedContent,
                 extendedFormat,
                 "source": runBy.id,
                 "script": thisScript.id
-            }, targetObj);
+            };
+            await this.world.publishMessage(im, targetObj);
         };
 
         // TODO: Mask functions from client (proxy?)
@@ -76,8 +74,8 @@ export class ScriptManager {
                 "tell": (message: string, target?: string, meta?: {[key: string]: any}) => {
                     wrap_async(world_tell(message, target, meta));
                 },
-                "tellExtended": async (extendedContent: string, extendedFormat: string | MessageFormats, target?: string, meta?: {[key: string]: any}) => {
-                    wrap_async(world_tell(null, target, meta, extendedContent, extendedFormat));
+                "tellExtended": async (extendedFormat: MessageFormats, extendedContent: {[key: string]: any}, target?: string, meta?: {[key: string]: any}) => {
+                    wrap_async(world_tell(null, target, meta, extendedFormat, extendedContent));
                 },
                 "connectedPlayers": () => {
                     return this.world.getConnectedPlayerIds();

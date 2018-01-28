@@ -4,7 +4,7 @@ import { MessageFormats } from "../client_types";
 interface JsSandbox {
     "world": {
         "tell": (message: string, target?: string, meta?: {[key: string]: any}) => void;
-        "tellExtended": (extendedContent: string, extendedFormat: string | MessageFormats, target?: string, meta?: {[key: string]: any}) => void;
+        "tellExtended": (extendedFormat: MessageFormats, extendedContent: {[key: string]: any}, target?: string, meta?: {[key: string]: any}) => void;
         "connectedPlayers": () => Promise<string[]>;
         "getPlayerNameFromId": (playerId: string) => Promise<string>;
         "getPlayerIdFromName": (playerName: string) => Promise<string>;

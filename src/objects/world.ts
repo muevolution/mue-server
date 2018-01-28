@@ -48,8 +48,10 @@ export class World {
         let outboundMessage: InteriorMessage;
         if (typeof message === "string") {
             outboundMessage = {"message": message};
-        } else {
+        } else if (message) {
             outboundMessage = message;
+        } else {
+            return false;
         }
 
         await this.opts.redisConnection.client.publishAsync(channel, JSON.stringify(outboundMessage));
