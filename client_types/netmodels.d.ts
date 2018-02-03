@@ -60,7 +60,7 @@ export interface MessageFormats {
 
 export interface InteriorMessage {
     message?: string;
-    extendedContent?: {[key: string]: string | number};
+    extendedContent?: {[key: string]: string};
     extendedFormat?: MessageFormats;
     source?: string;
     script?: string;
@@ -73,6 +73,6 @@ export interface CommunicationMessage {
     target: string;
     message: string;
     extendedFormat: string;
-    extendedContent: {[key: string]: string | number};
+    extendedContent: {[key: string]: string};
     meta?: {};
 }

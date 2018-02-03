@@ -1,3 +1,5 @@
+import * as _ from "lodash";
+
 import {
     ClientToServer,
     CommunicationMessage,
@@ -8,8 +10,14 @@ import {
 import { CommandProcessor } from "./commandproc";
 import { BaseTypedEmitter, TypedEmitter } from "./common";
 import * as formatter from "./formatter";
+import { FormattedMessage } from "./formatter";
 import { ObjectMoveEvent, Player, PlayerMessage, World } from "./objects";
 import { AsyncRedisClient } from "./redis";
+
+interface LocalMessage {
+    message: string;
+    substitutions: {[key: string]: string};
+}
 
 export class PubSub {
     private _player: Player;
@@ -69,7 +77,7 @@ export class PubSub {
     init() {
         this.tsock.emit("welcome", "MOTD goes here");
 
-        this.client.on("message", (channel, message: string) => {
+        this.client.on("message", async (channel, message: string) => {
             let displayedChannel = channel.substring(2);
             if (displayedChannel === this.player.id) {
                 displayedChannel = "you";
@@ -80,25 +88,19 @@ export class PubSub {
 
             switch (eventTarget) {
                 case "message":
-                    const msgString = this.getLocalMessage(msgObj);
-                    if (!msgString) {
+                    const msgString = await this.getLocalMessage(msgObj);
+                    if (!msgString || (!msgString.message && !msgString.format)) {
                         break;
                     }
 
-                    let extendedFormat;
-                    if (msgObj.extendedFormat) {
-                        if (msgObj.source === this.player.id) {
-                            extendedFormat = msgObj.extendedFormat.firstPerson;
-                        } else {
-                            extendedFormat = msgObj.extendedFormat.thirdPerson;
-                        }
-                    }
+                    const extendedContent = msgObj.extendedContent || {};
+                    _.merge(extendedContent, msgString.substitutions || {});
 
                     const output: CommunicationMessage = {
                         "target": displayedChannel,
-                        extendedFormat,
-                        "extendedContent": msgObj.extendedContent,
-                        "message": msgString,
+                        "extendedFormat": msgString.format,
+                        extendedContent,
+                        "message": msgString.message,
                         "source": msgObj.source,
                         "meta": msgObj.meta
                     };
@@ -157,18 +159,15 @@ export class PubSub {
         await this.client.subscribeAsync(`c:${e.newOwner.id}`);
     }
 
-    private getLocalMessage(message: InteriorMessage) {
-        if (message.extendedFormat && message.extendedContent) {
-            const formatted = formatter.format(message.extendedFormat, message.extendedContent);
-            if (message.source === this.player.id) {
-                return formatted.firstPerson;
-            } else {
-                return formatted.thirdPerson;
-            }
-        } else if (message.message) {
-            return message.message;
+    private async getLocalMessage(msg: InteriorMessage): Promise<FormattedMessage & {format: string}> {
+        let format;
+
+        if (msg.extendedFormat && msg.extendedContent) {
+            format = (msg.source === this.player.id) ? msg.extendedFormat.firstPerson : msg.extendedFormat.thirdPerson;
+            const formatted = await formatter.format(this.world, format, msg.extendedContent);
+            return { "message": formatted.message, "substitutions": formatted.substitutions, format };
         }
 
-        return null;
+        return { "message": msg.message, "substitutions": {}, "format": null };
     }
 }

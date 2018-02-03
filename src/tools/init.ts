@@ -21,29 +21,38 @@ async function main() {
         return;
     }
 
+    // Start from scratch
     await redis.client.flushdbAsync();
 
+    // Players
     const player1 = await Player.create(world, "Hera", null, null);
-    const player2 = await Player.create(world, "Kauko", player1, null);
-    Logger.debug("Player is", [player1.toString(), player2.toString()]);
     await world.storage.setRootValue(RootFields.GOD, player1.id);
 
-    const room = await Room.create(world, "#0", player1);
-    Logger.debug("Room is", room.toString());
-    await world.storage.setRootValue(RootFields.ROOT_ROOM, room.id);
+    const player2 = await Player.create(world, "Kauko", player1, null);
 
-    await player1.move(room);
-    await player2.move(room);
-    Logger.debug("Player moves complete");
+    Logger.debug("Players are", [player1.toString(), player2.toString()]);
+
+    // Rooms
+    const room = await Room.create(world, "#0", player1);
+    await world.storage.setRootValue(RootFields.ROOT_ROOM, room.id);
 
     const room2 = await Room.create(world, "First Room", player1, room);
 
+    // Room actions
     const room1act = await Action.create(world, "roomzero", player1, room2);
     await room1act.setTarget(room);
 
     const room2act = await Action.create(world, "roomone", player1, room);
     await room2act.setTarget(room2);
 
+    Logger.debug("Rooms are", [room.toString(), room2.toString()]);
+
+    // Put players in room
+    await player1.move(room);
+    await player2.move(room);
+    Logger.debug("Player moves complete");
+
+    // Load scripts
     await updateScripts(world, player1, room, room);
     Logger.debug("Code load complete");
 }
