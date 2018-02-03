@@ -57,3 +57,10 @@ pipeline:
     when:
       event: deployment
       environment: production
+
+  notify_neopush:
+    image: drone-registry.neocodenetworks.org/neopush/drone
+    pull: true
+    secrets: [ neopush_api_key ]
+    when:
+      status: [ failure, changed ]
