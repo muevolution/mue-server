@@ -1,7 +1,7 @@
 import * as Bluebird from "bluebird";
 import { VM } from "vm2";
 
-import { LocalCommand, MessageFormats, InteriorMessage } from "../client_types";
+import { InteriorMessage, LocalCommand, MessageFormats } from "../client_types";
 import { JsSandbox } from "./js-sandbox";
 import { Logger } from "./logging";
 import { GameObjectTypes, Player, Script, World } from "./objects";
@@ -99,12 +99,11 @@ export class ScriptManager {
                 },
                 "getParent": async (objectId: string) => {
                     const obj = await this.world.getObjectById(objectId);
-                    const parent = await obj.parent;
-                    if (!parent) {
-                        return null;
-                    }
-
-                    return parent.id;
+                    return obj.parent;
+                },
+                "getLocation": async (objectId: string) => {
+                    const obj = await this.world.getObjectById(objectId);
+                    return obj.location;
                 }
             },
             "script": {

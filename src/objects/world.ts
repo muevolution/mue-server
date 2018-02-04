@@ -37,7 +37,7 @@ export class World {
         if (target) {
             let targetId = target.id;
             if (target instanceof Item) {
-                targetId = target.meta.parent;
+                targetId = target.parent;
             }
 
             channel = `c:${targetId}`;
@@ -100,7 +100,7 @@ export class World {
         return Action.imitate(this, id);
     }
 
-    public getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject<any>> {
+    public getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject> {
         if (!id) {
             return null;
         }

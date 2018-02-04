@@ -1,11 +1,16 @@
 // tslint:disable:max-classes-per-file
 
 import { EventEmitter } from "events";
+import * as shortid from "shortid";
 import * as util from "util";
 
 import { MessageEvent } from "../client_types";
 import { Logger } from "./logging";
 import { AsyncRedisClient } from "./redis";
+
+export function generateId(): string {
+    return shortid.generate().toLowerCase().replace("_", "a").replace("-", "b");
+}
 
 export function RedisClientDebug(client: AsyncRedisClient, msg: {}) {
     // TODO: Add debug toggle

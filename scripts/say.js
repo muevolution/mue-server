@@ -12,6 +12,6 @@ const content = {
     "speaker": script.thisPlayer
 };
 
-const thisRoom = await world.getParent(script.thisPlayer);
+const thisRoom = await world.getLocation(script.thisPlayer);
 world.tellExtended(formats, content, thisRoom);
 //world.tell(`${await world.getPlayerNameFromId(script.thisPlayer)} says, "${sayMessage}"`, thisRoom);

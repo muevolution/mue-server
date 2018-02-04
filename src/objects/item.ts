@@ -1,18 +1,22 @@
 import * as _ from "lodash";
 
 import { Action } from "./action";
+import { Container, GetContents } from "./container";
 import { GameObject } from "./gameobject";
+import { ItemLocations, ItemParents } from "./model-aliases";
 import { GameObjectTypes, MetaData, MetaKeys } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
+import { Script } from "./script";
 import { World } from "./world";
 
-export class Item extends GameObject {
-    static async create(world: World, name: string, creator: Player, parent: Room | Player | Item) {
+export class Item extends GameObject implements Container {
+    static async create(world: World, name: string, creator: Player, parent: ItemParents, location?: ItemLocations) {
         const p = new Item(world, {
             name,
             "creator": creator.id,
-            "parent": parent.id
+            "parent": parent.id,
+            "location": location ? location.id : parent.id
         });
         await world.storage.addObject(p);
         return p;
@@ -31,8 +35,20 @@ export class Item extends GameObject {
         super(world, GameObjectTypes.ITEM, meta, id);
     }
 
-    public get parent(): Promise<Room | Player | Item> {
-        return super.parent as Promise<Room | Player | Item>;
+    public getParent(): Promise<ItemParents> {
+        return super.getParent() as Promise<ItemParents>;
+    }
+
+    public getLocation() {
+        return super.getLocation() as Promise<ItemLocations>;
+    }
+
+    getContents(type?: GameObjectTypes) {
+        return GetContents(this.world, this, type);
+    }
+
+    async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
+        return this.findIn(term, type);
     }
 
     async findIn(term: string, type?: GameObjectTypes): Promise<GameObject> {

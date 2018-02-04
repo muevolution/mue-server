@@ -100,7 +100,9 @@ export class CommandProcessor {
         if (target === "me") {
             return player;
         } else if (target === "here") {
-            return player.parent;
+            return player.getLocation();
+        } else if (target === "parent") {
+            return player.getParent();
         } else {
             // return player.find(target);
         }

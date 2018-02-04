@@ -119,12 +119,13 @@ export class PubSub {
                 this.tsock.emit("auth", { "success": false, "message": "Could not find login user.", "code": 100 });
                 this.socket.disconnect();
             } else {
-                const result = await this.subscribe(player, "c:world", `c:${player.meta.parent}`, `c:${player.id}`);
+                const channels = ["c:world", `c:${player.location}`, `c:${player.id}`];
+                const result = await this.subscribe(player, ...channels);
                 if (result) {
                     this.tsock.emit("auth", {"success": true, "message": `Welcome ${player.name} [${player.shortid}]`});
                     await this.world.publishMessage(`${player.name} has connected`);
                 } else {
-                    this.tsock.emit("fatal", { "message": "Unable to subscribe to channels.", "code": 201 } as ErrorResponse);
+                    this.tsock.emit("fatal", { "message": "Unable to subscribe to channels.", "code": 201 });
                     await this.quit();
                 }
             }
@@ -152,11 +153,11 @@ export class PubSub {
             return;
         }
 
-        if (e.oldOwner) {
-            await this.client.unsubscribeAsync(`c:${e.oldOwner.id}`);
+        if (e.oldLocation) {
+            await this.client.unsubscribeAsync(`c:${e.oldLocation.id}`);
         }
 
-        await this.client.subscribeAsync(`c:${e.newOwner.id}`);
+        await this.client.subscribeAsync(`c:${e.newLocation.id}`);
     }
 
     private async getLocalMessage(msg: InteriorMessage): Promise<FormattedMessage & {format: string}> {

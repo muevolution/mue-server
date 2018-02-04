@@ -21,11 +21,11 @@ export async function getScripts() {
     return g.map((s) => s.substring(8));
 }
 
-async function updateScript(world: World, filename: string, creator: Player, parent: Player | Room | Item, actionDestination?: Player | Room | Item) {
+async function updateScript(world: World, filename: string, creator: Player, location: Player | Room | Item, actionDestination?: Player | Room | Item) {
     let scriptCreated = false;
     let script = await world.find(filename, GameObjectTypes.SCRIPT) as Script;
     if (!script) {
-        script = await Script.create(world, filename, creator, parent);
+        script = await Script.create(world, filename, creator, location);
         scriptCreated = true;
     }
 

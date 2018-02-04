@@ -9,6 +9,7 @@ interface JsSandbox {
         "getPlayerNameFromId": (playerId: string) => Promise<string>;
         "getPlayerIdFromName": (playerName: string) => Promise<string>;
         "getParent": (objectId: string) => Promise<string>;
+        "getLocation": (objectId: string) => Promise<string>;
     },
     "script": {
         "thisScript": string;

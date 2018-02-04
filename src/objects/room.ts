@@ -1,20 +1,23 @@
 import * as _ from "lodash";
 
 import { Action } from "./action";
+import { Container, GetContents } from "./container";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
+import { RoomLocations, RoomParents } from "./model-aliases";
 import { GameObjectTypes, MetaData, MetaKeys } from "./models";
 import { Player } from "./player";
 import { World } from "./world";
 
 const ROOM_CACHE = {} as {[id: string]: Room};
 
-export class Room extends GameObject {
-    static async create(world: World, name: string, creator: Player, parent?: Room) {
+export class Room extends GameObject implements Container {
+    static async create(world: World, name: string, creator: Player, parent?: RoomParents, location?: RoomLocations) {
         const p = new Room(world, {
             name,
             "creator": creator.id,
-            "parent": parent ? parent.id : null
+            "parent": parent ? parent.id : null,
+            "location": location ? location.id : parent ? parent.id : null,
         });
         await world.storage.addObject(p);
         ROOM_CACHE[p.id] = p;
@@ -40,8 +43,16 @@ export class Room extends GameObject {
         super(world, GameObjectTypes.ROOM, meta, id);
     }
 
-    public get parent(): Promise<Room> {
-        return super.parent as Promise<Room>;
+    public getParent(): Promise<RoomParents> {
+        return super.getParent() as Promise<RoomParents>;
+    }
+
+    public getLocation() {
+        return super.getLocation() as Promise<RoomLocations>;
+    }
+
+    getContents(type?: GameObjectTypes) {
+        return GetContents(this.world, this, type);
     }
 
     // TODO: This method needs optimization/caching
@@ -53,14 +64,14 @@ export class Room extends GameObject {
         }
 
         // Now search the parent tree
-        let current = await this.parent;
+        let current = await this.getParent();
         while (current) {
             const action = await current.findIn(term, type);
             if (action) {
                 return action;
             }
 
-            current = await current.parent;
+            current = await current.getParent();
         }
 
         return null;

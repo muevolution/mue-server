@@ -1,13 +1,13 @@
 import { EventEmitter } from "events";
 import * as _ from "lodash";
-import * as shortid from "shortid";
 
-import { BaseTypedEmitter } from "../common";
+import { BaseTypedEmitter, generateId } from "../common";
+import { AllContainers } from "./model-aliases";
 import { GameObjectMessage, GameObjectTypes, IGameObject, MetaData, splitExtendedId } from "./models";
 import { World } from "./world";
 
 export abstract class GameObject<MD extends MetaData = MetaData> extends EventEmitter implements IGameObject {
-    public static checkType(data: GameObject<any> | string, type: GameObjectTypes): boolean {
+    public static checkType(data: GameObject | string, type: GameObjectTypes): boolean {
         if (!data) {
             return false;
         }
@@ -20,15 +20,6 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return (split.type === type);
     }
 
-    public static deserialize<T extends GameObject<any>>(data: string): T {
-        // TODO: Add type checking
-        return JSON.parse(data);
-    }
-
-    private static generateId(): string {
-        return shortid.generate().toLowerCase().replace("_", "a").replace("-", "b");
-    }
-
     protected _meta: MD;
     private _id: string;
     private _type: GameObjectTypes;
@@ -36,7 +27,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
 
     protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
         super();
-        this._id = id ? splitExtendedId(id).id : GameObject.generateId();
+        this._id = id ? splitExtendedId(id).id : generateId();
         this._type = objectType;
         this._meta = meta;
         this.tupdater = new BaseTypedEmitter(this);
@@ -63,7 +54,19 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     }
 
     public get parent() {
-        return this.world.getObjectById(this._meta.parent);
+        return this._meta.parent;
+    }
+
+    public getParent() {
+        return this.world.getObjectById(this.parent);
+    }
+
+    public get location() {
+        return this._meta.location;
+    }
+
+    public getLocation(): Promise<AllContainers> {
+        return this.world.getObjectById(this.location) as Promise<AllContainers>;
     }
 
     public async get() {
@@ -91,27 +94,34 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return updatedMeta && updatedIndex;
     }
 
-    public async move(newOwner: GameObject<any>): Promise<{oldOwner?: GameObject<any>, newOwner: GameObject<any>}> {
+    public async reparent(newParent: GameObject): Promise<{oldParent?: GameObject, newParent: GameObject}> {
         const parent = await this.world.storage.getMeta(this, "parent");
-        const oldOwner = await this.world.getObjectById(parent);
-        const result = await this.world.storage.moveObject(this, newOwner, oldOwner);
+        const oldParent = await this.world.getObjectById(parent);
+        const result = await this.world.storage.reparentObject(this, newParent, oldParent);
         if (!result) {
             return null;
         }
 
-        this._meta.parent = newOwner.id;
+        this._meta.parent = newParent.id;
 
-        const output = { oldOwner, newOwner };
-        this.tupdater.emit("move", output);
+        const output = { oldParent, newParent };
+        this.tupdater.emit("reparent", output);
         return output;
     }
 
-    public async getContents(type?: GameObjectTypes): Promise<Array<GameObject<any>>> {
-        const contentIds = await this.world.storage.getContents(this, type);
-        const contentP = _.map(contentIds, (id) => {
-            return this.world.getObjectById(id, type);
-        });
-        return Promise.all(contentP);
+    public async move(newLocation: AllContainers): Promise<{oldLocation?: GameObject, newLocation: GameObject}> {
+        const oldLocationEid = await this.world.storage.getMeta(this, "location");
+        const oldLocation = await this.world.getObjectById(oldLocationEid);
+        const result = await this.world.storage.moveObject(this, newLocation as GameObject, oldLocation);
+        if (!result) {
+            return null;
+        }
+
+        this._meta.location = newLocation.id;
+
+        const output = { oldLocation, "newLocation": newLocation as GameObject };
+        this.tupdater.emit("move", output);
+        return output;
     }
 
     toString() {

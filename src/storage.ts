@@ -1,18 +1,21 @@
 import * as _ from "lodash";
 import { Multi } from "redis";
 
-import { GameObject, GameObjectTypes, MetaData, MetaKeys, RootFields, splitExtendedId } from "./objects";
+import { AllContainers, GameObject, GameObjectTypes, MetaData, MetaKeys, RootFields, splitExtendedId } from "./objects";
 import { AsyncRedisClient, AsyncRedisMulti } from "./redis";
 
 export class Storage {
     private static getKeyStructure(owner: GameObject | string, key: string) {
-        let eid;
-        if (typeof owner === "object") {
-            eid = owner.id;
-        } else {
-            eid = owner;
-        }
+        const eid = Storage.getIdFromObject(owner);
         return `s:${eid}:${key}`;
+    }
+
+    private static getIdFromObject(obj: GameObject | string): string {
+        if (typeof obj === "object") {
+            return obj.id;
+        } else {
+            return obj;
+        }
     }
 
     private static getPropKeyStructure(owner: GameObject | string) {
@@ -57,7 +60,8 @@ export class Storage {
         }
 
         if (object.meta.parent) {
-            this.moveInMulti(multi, object, object.meta.parent, null, false);
+            this.reparentMoveInMulti(multi, "parent", object, object.meta.parent, null, false);
+            this.reparentMoveInMulti(multi, "location", object, object.meta.location, null, false);
         }
 
         return multi.execAsync();
@@ -92,7 +96,7 @@ export class Storage {
         return result === "OK";
     }
 
-    async getContents<MD extends MetaData>(owner: GameObject<MD> | string, type?: GameObjectTypes): Promise<string[]> {
+    async getContents(owner: GameObject | string, type?: GameObjectTypes): Promise<string[]> {
         const contents = await this.client.lrangeAsync(Storage.getContentsKeyStructure(owner), 0, -1);
         if (!type) {
             return contents;
@@ -104,44 +108,42 @@ export class Storage {
         });
     }
 
-    async moveObject(object: GameObject | string, newOwner: GameObject | string, oldOwner?: GameObject | string): Promise<boolean> {
+    async reparentObject(object: GameObject | string, newParent: GameObject | string, oldParent?: GameObject | string): Promise<boolean> {
         const multi = this.client.multi();
-        await this.moveInMulti(multi, object, newOwner, oldOwner);
+        await this.reparentMoveInMulti(multi, "parent", object, newParent, oldParent);
         await multi.execAsync();
         return true;
     }
 
-    moveInMulti(multi: Multi, object: GameObject | string, newOwner: GameObject | string, oldOwner?: GameObject | string, writeMeta: boolean = true) {
+    async moveObject(object: GameObject | string, newLocation: GameObject | string, oldLocation?: GameObject | string): Promise<boolean> {
+        const multi = this.client.multi();
+        await this.reparentMoveInMulti(multi, "location", object, newLocation, oldLocation);
+        await multi.execAsync();
+        return true;
+    }
+
+    reparentMoveInMulti(multi: Multi, type: "parent" | "location", object: GameObject | string, newOwner: GameObject | string, oldOwner?: GameObject | string, writeMeta: boolean = true) {
         if (!newOwner) {
             return false;
         }
 
-        let objectEid;
-        if (typeof object === "object") {
-            objectEid = object.id;
-        } else {
-            objectEid = object;
-        }
-
-        let newOwnerEid;
-        if (typeof newOwner === "object") {
-            newOwnerEid = newOwner.id;
-        } else {
-            newOwnerEid = newOwner;
-        }
+        const objectEid = Storage.getIdFromObject(object);
+        const newOwnerEid = Storage.getIdFromObject(newOwner);
 
         // Set object's reference
         if (writeMeta) {
-            multi.hset(Storage.getMetaKeyStructure(object), "parent", newOwnerEid);
+            multi.hset(Storage.getMetaKeyStructure(object), type, newOwnerEid);
         }
 
-        // Remove from old storage
-        if (oldOwner) {
-            multi.lrem(Storage.getContentsKeyStructure(oldOwner), 0, objectEid);
-        }
+        if (type === "location") {
+            // Remove from old storage
+            if (oldOwner) {
+                multi.lrem(Storage.getContentsKeyStructure(oldOwner), 0, objectEid);
+            }
 
-        // Add to new
-        multi.rpush(Storage.getContentsKeyStructure(newOwner), objectEid);
+            // Add to new
+            multi.rpush(Storage.getContentsKeyStructure(newOwner), objectEid);
+        }
     }
 
     getMeta<MD extends MetaData>(object: GameObject<MD> | string): Promise<MD>;

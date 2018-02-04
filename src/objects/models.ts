@@ -1,7 +1,5 @@
 import { Storage } from "../storage";
 
-export type PlayerId = string;
-
 export enum GameObjectTypes {
     ROOM = "r",
     PLAYER = "p",
@@ -12,6 +10,7 @@ export enum GameObjectTypes {
 
 export enum RootFields {
     ROOT_ROOM = "root_room",
+    PLAYER_ROOT = "player_root",
     GOD = "god"
 }
 
@@ -32,12 +31,14 @@ export interface MetaData {
     name: string;
     creator: string;
     parent: string;
+    location: string;
 }
 
 export type MetaKeys = keyof MetaData;
 
 export interface GameObjectMessage {
     rename: ObjectRenameEvent;
+    reparent: ObjectReparentEvent;
     move: ObjectMoveEvent;
 }
 
@@ -45,9 +46,14 @@ export interface IGameObject {
     id: string;
 }
 
+export interface ObjectReparentEvent {
+    oldParent?: IGameObject;
+    newParent: IGameObject;
+}
+
 export interface ObjectMoveEvent {
-    oldOwner?: IGameObject;
-    newOwner: IGameObject;
+    oldLocation?: IGameObject;
+    newLocation: IGameObject;
 }
 
 export interface ObjectRenameEvent {

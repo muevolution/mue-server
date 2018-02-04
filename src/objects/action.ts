@@ -2,6 +2,7 @@ import * as _ from "lodash";
 
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
+import { ActionLocations, ActionParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
@@ -13,11 +14,12 @@ export interface ActionMetaData extends MetaData {
 }
 
 export class Action extends GameObject<ActionMetaData> {
-    static async create(world: World, name: string, creator: Player, parent: Room | Player | Item) {
+    static async create(world: World, name: string, creator: Player, location?: ActionLocations) {
         const p = new Action(world, {
             name,
             "creator": creator.id,
-            "parent": parent.id
+            "parent": creator.id,
+            "location": location ? location.id : creator.id
         });
         await world.storage.addObject(p);
         return p;
@@ -36,8 +38,12 @@ export class Action extends GameObject<ActionMetaData> {
         super(world, GameObjectTypes.ACTION, meta, id);
     }
 
-    public get parent(): Promise<Room | Player | Item> {
-        return super.parent as Promise<Room | Player | Item>;
+    public getParent() {
+        return super.getParent() as Promise<ActionParents>;
+    }
+
+    public getLocation() {
+        return super.getLocation() as Promise<ActionLocations>;
     }
 
     get target() {

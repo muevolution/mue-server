@@ -2,20 +2,23 @@ import * as _ from "lodash";
 
 import { InteriorMessage } from "../../client_types";
 import { Action } from "./action";
+import { Container, GetContents } from "./container";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
+import { PlayerLocations, PlayerParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Room } from "./room";
 import { World } from "./world";
 
 const PLAYER_CACHE = {} as {[id: string]: Player};
 
-export class Player extends GameObject {
-    static async create(world: World, name: string, creator: Player, parent: Room) {
+export class Player extends GameObject implements Container {
+    static async create(world: World, name: string, creator?: Player, parent?: PlayerParents, location?: PlayerLocations) {
         const p = new Player(world, {
             name,
             "creator": creator ? creator.id : null,
-            "parent": parent ? parent.id : null
+            "parent": parent ? parent.id : null,
+            "location": location ? location.id : parent ? parent.id : null,
         });
 
         // Make sure a player with this name doesn't already exist
@@ -48,29 +51,33 @@ export class Player extends GameObject {
         super(world, GameObjectTypes.PLAYER, meta, id);
     }
 
-    public get parent(): Promise<Room> {
-        return super.parent as Promise<Room>;
+    public getParent() {
+        return super.getParent() as Promise<PlayerParents>;
     }
 
-    async move(newOwner: Room) {
-        const result = await super.move(newOwner) as {oldOwner?: Room, newOwner: Room};
+    public getLocation() {
+        return super.getLocation() as Promise<PlayerLocations>;
+    }
+
+    async move(newLocation: PlayerLocations): Promise<{oldLocation?: GameObject, newLocation: GameObject}> {
+        const result = await super.move(newLocation);
 
         // Notify rooms of change
         // TODO: Make sure the current user doesn't the third person join/part messages
         if (result) {
-            if (result.oldOwner) {
-                await this.world.publishMessage(`${this.name} has left.`, result.oldOwner);
+            if (result.oldLocation) {
+                await this.world.publishMessage(`${this.name} has left.`, result.oldLocation);
             }
 
-            await this.sendMessage(`You arrive in ${result.newOwner.name}.`);
-            await this.world.publishMessage(`${this.name} has arrived.`, result.newOwner);
+            await this.sendMessage(`You arrive in ${result.newLocation.name}.`);
+            await this.world.publishMessage(`${this.name} has arrived.`, result.newLocation);
         }
 
         return result;
     }
 
-    public async sendMessage(message: InteriorMessage | string): Promise<boolean> {
-        return this.world.publishMessage(message, this);
+    getContents(type?: GameObjectTypes) {
+        return GetContents(this.world, this, type);
     }
 
     async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
@@ -82,8 +89,8 @@ export class Player extends GameObject {
 
         // Now search the room tree
         if (type === GameObjectTypes.ACTION) {
-            const parent = await this.parent;
-            return parent.find(term, type);
+            const location = await this.getLocation();
+            return location.find(term, type);
         }
     }
 
@@ -121,7 +128,11 @@ export class Player extends GameObject {
         return null;
     }
 
-    public quit(reason?: string) {
+    async sendMessage(message: InteriorMessage | string): Promise<boolean> {
+        return this.world.publishMessage(message, this);
+    }
+
+    quit(reason?: string) {
         this.emit("quit", reason);
     }
 }

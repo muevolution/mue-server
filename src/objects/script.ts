@@ -2,6 +2,7 @@ import { VMScript } from "vm2";
 
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
+import { ScriptLocations, ScriptParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
@@ -22,11 +23,12 @@ const CODE_WRAP_TAIL = `
 `;
 
 export class Script extends GameObject {
-    static async create(world: World, name: string, creator: Player, parent?: Room | Player | Item) {
+    static async create(world: World, name: string, creator: Player, location?: ScriptLocations) {
         const p = new Script(world, {
             name,
             "creator": creator.id,
-            "parent": parent.id
+            "parent": creator.id,
+            "location": location ? location.id : creator.id
         });
         await world.storage.addObject(p);
         SCRIPT_CACHE[p.id] = p;
@@ -62,8 +64,12 @@ export class Script extends GameObject {
         super(world, GameObjectTypes.SCRIPT, meta, id);
     }
 
-    public get parent(): Promise<Room | Player | Item> {
-        return super.parent as Promise<Room | Player | Item>;
+    public getParent() {
+        return super.getParent() as Promise<ScriptParents>;
+    }
+
+    public getLocation() {
+        return super.getLocation() as Promise<ScriptLocations>;
     }
 
     public get compiled() {

@@ -25,35 +25,39 @@ async function main() {
     await redis.client.flushdbAsync();
 
     // Players
-    const player1 = await Player.create(world, "Hera", null, null);
+    const player1 = await Player.create(world, "Hera");
     await world.storage.setRootValue(RootFields.GOD, player1.id);
-
-    const player2 = await Player.create(world, "Kauko", player1, null);
-
-    Logger.debug("Players are", [player1.toString(), player2.toString()]);
+    Logger.debug("Player 1 is", player1.toString());
 
     // Rooms
-    const room = await Room.create(world, "#0", player1);
-    await world.storage.setRootValue(RootFields.ROOT_ROOM, room.id);
+    const room1 = await Room.create(world, "#0", player1);
+    await world.storage.setRootValue(RootFields.ROOT_ROOM, room1.id);
 
-    const room2 = await Room.create(world, "First Room", player1, room);
+    const proom = await Room.create(world, "Player Root", player1);
+    await world.storage.setRootValue(RootFields.PLAYER_ROOT, proom.id);
+
+    const room2 = await Room.create(world, "First Room", player1, room1);
 
     // Room actions
     const room1act = await Action.create(world, "roomzero", player1, room2);
-    await room1act.setTarget(room);
+    await room1act.setTarget(room1);
 
-    const room2act = await Action.create(world, "roomone", player1, room);
+    const room2act = await Action.create(world, "roomone", player1, room1);
     await room2act.setTarget(room2);
 
-    Logger.debug("Rooms are", [room.toString(), room2.toString()]);
+    Logger.debug("Rooms are", [room1.toString(), room2.toString()]);
 
     // Put players in room
-    await player1.move(room);
-    await player2.move(room);
+    await player1.move(room1);
+    await player1.reparent(proom);
     Logger.debug("Player moves complete");
 
+    // Create second player in one go
+    const player2 = await Player.create(world, "Kauko", player1, proom, room1);
+    Logger.debug("Player 2 is", player2.toString());
+
     // Load scripts
-    await updateScripts(world, player1, room, room);
+    await updateScripts(world, player1, room1, room1);
     Logger.debug("Code load complete");
 }
 
