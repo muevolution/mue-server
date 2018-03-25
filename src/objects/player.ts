@@ -80,25 +80,35 @@ export class Player extends GameObject implements Container {
         return GetContents(this.world, this, type);
     }
 
-    async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
+    async find(term: string, type?: GameObjectTypes, searchLoc?: boolean): Promise<GameObject> {
         // Search on player first
         const firstSearch = await this.findIn(term, type);
         if (firstSearch) {
             return firstSearch;
         }
 
+        // Now search the player tree
+        let parent: Room;
         if (type === GameObjectTypes.ACTION) {
-            // Now search the player tree
-            const parent = await this.getParent();
+            parent = await this.getParent();
             const pRes = await parent.find(term, type);
             if (pRes) {
                 return pRes;
             }
+        }
 
-            // Now search the room tree
+        // Now search the room tree
+        if (type === GameObjectTypes.ACTION || searchLoc) {
             const location = await this.getLocation();
+            if (location === parent) {
+                // Already searched this tree
+                return null;
+            }
+
             return location.find(term, type);
         }
+
+        return null;
     }
 
     async findIn(term: string, type?: GameObjectTypes): Promise<GameObject> {
@@ -158,7 +168,7 @@ export class Player extends GameObject implements Container {
             }
         }
 
-        return this.find(target);
+        return this.find(target, undefined, true);
     }
 
     async sendMessage(message: InteriorMessage | string): Promise<boolean> {

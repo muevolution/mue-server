@@ -56,4 +56,4 @@ if (contents && contents.length > 0) {
 }
 
 // Finally, send to the player!
-world.tell(outputLines.join("\n"));
+world.tell(outputLines.join("\n"), undefined, {"target": lookObj});

@@ -93,7 +93,7 @@ export class Room extends GameObject implements Container {
         }
 
         // Test general item names
-        const inv = _.find(contents, (c) => c.type === type && c.matchName(term));
+        const inv = _.find(contents, (c) => (!type || c.type === type) && c.matchName(term));
         if (inv) {
             return inv;
         }
