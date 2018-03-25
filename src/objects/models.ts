@@ -66,6 +66,6 @@ export interface PlayerMessage extends GameObjectMessage {
 }
 
 export interface InterServerMessage {
-    event: string;
+    event: "joined" | "invalidate_script";
     meta?: {};
 }

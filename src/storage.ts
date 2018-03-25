@@ -4,6 +4,11 @@ import { Multi } from "redis";
 import { AllContainers, GameObject, GameObjectTypes, MetaData, MetaKeys, RootFields, splitExtendedId } from "./objects";
 import { AsyncRedisClient, AsyncRedisMulti } from "./redis";
 
+export type PropValues = string | number | Array<string | number>;
+export interface PropStructure {
+    [key: string]: PropValues;
+}
+
 export class Storage {
     private static getKeyStructure(owner: GameObject | string, key: string) {
         const eid = Storage.getIdFromObject(owner);
@@ -79,21 +84,46 @@ export class Storage {
         return this.client.hgetAsync(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER), name.toLowerCase());
     }
 
-    async updatePlayerNameIndex(oldName: string, object: GameObject) {
+    async updatePlayerNameIndex(oldName: string, object: GameObject): Promise<boolean> {
         const multi = this.client.multi();
         multi.hdel(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER), oldName);
         multi.hset(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER), object.name, object.id);
-        return multi.execAsync();
+        await multi.execAsync();
+        return true;
     }
 
-    getProps(owner: GameObject | string) {
-        return this.client.getAsync(Storage.getPropKeyStructure(owner));
+    async getProp(owner: GameObject | string, path: string): Promise<PropValues> {
+        const prop = await this.client.hgetAsync(Storage.getPropKeyStructure(owner), path);
+        const deserialized = JSON.parse(prop);
+        return deserialized;
     }
 
-    async setProps(owner: GameObject | string, props: {}): Promise<boolean> {
-        // TODO: Investigate using a hash per user for this
-        const result = await this.client.setAsync(Storage.getPropKeyStructure(owner), JSON.stringify(props));
-        return result === "OK";
+    async getProps(owner: GameObject | string): Promise<PropStructure> {
+        const props = await this.client.hgetallAsync(Storage.getPropKeyStructure(owner));
+        const deserialized = _.mapValues(props, (v, k) => JSON.parse(v));
+        return deserialized;
+    }
+
+    async setProp(owner: GameObject | string, path: string, value: PropValues): Promise<boolean> {
+        const serialized = JSON.stringify(value);
+        if (value) {
+            await this.client.hsetAsync(Storage.getPropKeyStructure(owner), path, serialized);
+        } else {
+            await this.client.hdelAsync(Storage.getPropKeyStructure(owner), path);
+        }
+        return true;
+    }
+
+    async setProps(owner: GameObject | string, props: PropStructure): Promise<boolean> {
+        const key = Storage.getPropKeyStructure(owner);
+        const serialized = _.mapValues(props, (v, k) => JSON.stringify(v));
+
+        const multi = this.client.multi();
+        multi.del(key);
+        this.updateHashInMulti(multi, key, serialized);
+        await multi.execAsync();
+
+        return true;
     }
 
     async getContents(owner: GameObject | string, type?: GameObjectTypes): Promise<string[]> {
@@ -156,18 +186,19 @@ export class Storage {
         }
     }
 
-    updateMeta<MD extends MetaData>(object: GameObject<MD> | string, meta: MD): Promise<boolean>;
-    updateMeta<MD extends MetaData, KD extends keyof MD>(object: GameObject<MD> | string, key: KD, value: string): Promise<boolean>;
-    async updateMeta<MD extends MetaData, KD extends keyof MD>(object: GameObject<MD> | string, meta: KD | MD, value?: string): Promise<boolean> {
+    updateMeta<MD extends Readonly<MetaData>>(object: GameObject<MD> | string, meta: MD): Promise<boolean>;
+    updateMeta<MD extends Readonly<MetaData>, KD extends keyof MD>(object: GameObject<MD> | string, key: KD, value: string): Promise<boolean>;
+    async updateMeta<MD extends Readonly<MetaData>, KD extends keyof MD>(object: GameObject<MD> | string, meta: KD | MD, value?: string): Promise<boolean> {
         const key = Storage.getMetaKeyStructure(object);
         if (typeof meta === "object") {
             const multi = this.client.multi();
             this.updateHashInMulti(multi, key, meta);
-            return multi.execAsync();
+            await multi.execAsync();
         } else {
             await this.client.hsetAsync(key, meta, value);
-            return true;
         }
+
+        return true;
     }
 
     getRootValue(field: RootFields) {
@@ -178,8 +209,8 @@ export class Storage {
         return this.client.hsetAsync(Storage.getRootKey(), field, value);
     }
 
-    updateHashInMulti<MD extends MetaData>(multi: Multi, key: string, meta: MD) {
-        _.forEach(meta, (v, k) => {
+    updateHashInMulti(multi: Multi, key: string, value: {[key: string]: string}) {
+        _.forEach(value, (v, k) => {
             if (v !== undefined && v !== null) {
                 multi.hset(key, k, v);
             } else {

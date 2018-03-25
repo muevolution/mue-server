@@ -4,13 +4,13 @@ import {
     ClientToServer,
     CommunicationMessage,
     ErrorResponse,
-    InteriorMessage,
     ServerToClient
 } from "../client_types";
 import { CommandProcessor } from "./commandproc";
 import { BaseTypedEmitter, TypedEmitter } from "./common";
 import * as formatter from "./formatter";
 import { FormattedMessage } from "./formatter";
+import { InteriorMessage } from "./netmodels";
 import { ObjectMoveEvent, Player, PlayerMessage, World } from "./objects";
 import { AsyncRedisClient } from "./redis";
 

@@ -1,4 +1,4 @@
-import { InteriorMessage, LocalCommand } from "../../client_types";
+import { InteriorMessage, LocalCommand } from "../netmodels";
 import { Player, World } from "../objects";
 
 export function command_unknown(world: World, player: Player, command: LocalCommand) {

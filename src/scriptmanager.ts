@@ -1,9 +1,10 @@
 import * as Bluebird from "bluebird";
 import { VM } from "vm2";
+import * as _ from "lodash";
 
-import { InteriorMessage, LocalCommand, MessageFormats } from "../client_types";
 import { JsSandbox } from "./js-sandbox";
 import { Logger } from "./logging";
+import { InteriorMessage, LocalCommand, MessageFormats } from "./netmodels";
 import { GameObjectTypes, Player, Script, World } from "./objects";
 
 // TODO: Some form of timeslicing per player
@@ -99,11 +100,42 @@ export class ScriptManager {
                 },
                 "getParent": async (objectId: string) => {
                     const obj = await this.world.getObjectById(objectId);
+                    if (!obj) {
+                        return null;
+                    }
+
                     return obj.parent;
                 },
                 "getLocation": async (objectId: string) => {
                     const obj = await this.world.getObjectById(objectId);
+                    if (!obj) {
+                        return null;
+                    }
+
                     return obj.location;
+                },
+                "find": async (target: string) => {
+                    const obj = await runBy.resolveTarget(target);
+                    if (!obj) {
+                        return null;
+                    }
+
+                    return obj.id;
+                },
+                "getDetails": async (objectId: string) => {
+                    const obj = await this.world.getObjectById(objectId);
+                    // TODO: Clean this up
+                    const meta = _.cloneDeep(obj.meta) as {[key: string]: string};
+                    meta.type = obj.type;
+
+                    return meta;
+                },
+                "getProp": async (objectId: string, path: string) => {
+                    const obj = await this.world.getObjectById(objectId);
+                    return obj.getProp(path);
+                },
+                "getContents": async (objectId: string) => {
+                    return this.world.storage.getContents(objectId);
                 }
             },
             "script": {
@@ -121,6 +153,16 @@ export class ScriptManager {
                 "error": (...args: any[]) => {
                     wrap_async(user_log("error", ...args));
                 }
+            },
+            "Types": {
+                "Room": "r",
+                "Player": "p",
+                "Item": "i",
+                "Script": "s",
+                "Action": "a"
+            },
+            "Library": {
+                "lodash": _
             }
         };
     }

@@ -42,6 +42,7 @@ export interface AsyncRedisClient extends redis.RedisClient {
     hgetallAsync(key: string): Promise<{[key: string]: string}>;
     hmsetAsync(key: string, value: {[key: string]: string}): Promise<boolean>;
     hsetAsync(key: string, field: string, value: string): Promise<number>;
+    hdelAsync(key: string, field: string): Promise<number>;
 
     pubsubAsync(command: "channels", pattern?: string): Promise<string[]>;
     pubsubAsync(command: "numsub", ...channels: string[]): Promise<Array<string|number>>;
@@ -54,5 +55,5 @@ export interface AsyncRedisClient extends redis.RedisClient {
 }
 
 export interface AsyncRedisMulti extends redis.Multi {
-    execAsync(): Promise<boolean>;
+    execAsync(): Promise<any[]>;
 }

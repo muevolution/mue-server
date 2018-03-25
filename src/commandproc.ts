@@ -1,8 +1,9 @@
 import * as _ from "lodash";
 
-import { CommandRequest, ExpandedCommandRequest, InteriorMessage, LocalCommand, ShortCommandRequest } from "../client_types";
+import { CommandRequest, ExpandedCommandRequest, ShortCommandRequest } from "../client_types";
 import * as builtins from "./builtins";
 import { Logger } from "./logging";
+import { InteriorMessage, LocalCommand } from "./netmodels";
 import { Action, GameObject, GameObjectTypes, Player, Room, Script, World } from "./objects";
 import { ScriptManager } from "./scriptmanager";
 
@@ -56,11 +57,17 @@ export class CommandProcessor {
     async hardcodedCommands(player: Player, command: LocalCommand): Promise<boolean> {
         // TODO: Implement hardcoded commands with decorators
         switch (command.command.toLowerCase()) {
-            case "@quit":
+            case "$quit":
                 await builtins.command_quit(player);
                 return true;
-            case "@inspect":
+            case "$inspect":
                 await builtins.command_inspect(this.world, player);
+                return true;
+            case "$examine":
+                await builtins.command_examine(this.world, player);
+                return true;
+            case "$set":
+                await builtins.command_set(this.world, player, command);
                 return true;
         }
 
@@ -94,19 +101,5 @@ export class CommandProcessor {
         }
 
         throw new Error(`Action was tied to something other than a room or script: '${action.target}'`);
-    }
-
-    async resolveTarget(player: Player, target: string): Promise<GameObject> {
-        if (target === "me") {
-            return player;
-        } else if (target === "here") {
-            return player.getLocation();
-        } else if (target === "parent") {
-            return player.getParent();
-        } else {
-            // return player.find(target);
-        }
-
-        return null;
     }
 }

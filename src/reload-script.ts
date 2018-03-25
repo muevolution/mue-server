@@ -33,9 +33,9 @@ async function updateScript(world: World, filename: string, creator: Player, loc
     await script.updateCode(fileContents);
 
     if (scriptCreated && actionDestination) {
-        const actionRegex = /^\/\/\/ worldscript:(\w+)$/m;
+        const actionRegex = /^\/\/\/ worldscript:([\w|;]+)$/m;
         const result = actionRegex.exec(fileContents);
-        if (result.length < 2) {
+        if (!result || result.length < 2) {
             return;
         }
 
@@ -45,8 +45,8 @@ async function updateScript(world: World, filename: string, creator: Player, loc
     }
 }
 
-export async function updateScripts(world: World, creator: Player, parent: Player | Room | Item, actionDestination?: Player | Room | Item) {
+export async function updateScripts(world: World, creator: Player, location: Player | Room | Item, actionDestination?: Player | Room | Item) {
     const scripts = await getScripts();
-    await Promise.all(_.map(scripts, (s) => updateScript(world, s, creator, parent, actionDestination)));
+    await Promise.all(_.map(scripts, (s) => updateScript(world, s, creator, location, actionDestination)));
     await world.invalidateScriptCache();
 }

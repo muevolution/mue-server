@@ -2,6 +2,7 @@ import { EventEmitter } from "events";
 import * as _ from "lodash";
 
 import { BaseTypedEmitter, generateId } from "../common";
+import { PropStructure, PropValues } from "../storage";
 import { AllContainers } from "./model-aliases";
 import { GameObjectMessage, GameObjectTypes, IGameObject, MetaData, splitExtendedId } from "./models";
 import { World } from "./world";
@@ -69,11 +70,19 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return this.world.getObjectById(this.location) as Promise<AllContainers>;
     }
 
-    public async get() {
+    public getProp(path: string): Promise<PropValues> {
+        return this.world.storage.getProp(this, path);
+    }
+
+    public getProps(): Promise<PropStructure> {
         return this.world.storage.getProps(this);
     }
 
-    public async set(props: {}) {
+    public setProp(path: string, value: PropValues) {
+        return this.world.storage.setProp(this, path, value);
+    }
+
+    public setProps(props: PropStructure) {
         return this.world.storage.setProps(this, props);
     }
 

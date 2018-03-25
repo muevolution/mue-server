@@ -16,7 +16,7 @@ async function main() {
     await world.init();
 
     const player1 = await world.getPlayerByName("Hera");
-    const room = await player1.getParent();
+    const room = await world.getRootRoom();
 
     await updateScripts(world, player1, room, room);
     Logger.debug("Code load complete");

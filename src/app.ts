@@ -65,7 +65,7 @@ io.on("connection", (socket) => {
 
 setInterval(async () => {
     await world.publishMessage(`The time is ${new Date().toISOString()}`);
-}, 30000);
+}, 60000);
 
 async function main() {
     await world.init();

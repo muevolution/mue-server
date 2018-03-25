@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 
-import { InteriorMessage } from "../../client_types";
+import { InteriorMessage } from "../netmodels";
 import { Action } from "./action";
 import { Container, GetContents } from "./container";
 import { GameObject } from "./gameobject";
@@ -87,8 +87,15 @@ export class Player extends GameObject implements Container {
             return firstSearch;
         }
 
-        // Now search the room tree
         if (type === GameObjectTypes.ACTION) {
+            // Now search the player tree
+            const parent = await this.getParent();
+            const pRes = await parent.find(term, type);
+            if (pRes) {
+                return pRes;
+            }
+
+            // Now search the room tree
             const location = await this.getLocation();
             return location.find(term, type);
         }
@@ -126,6 +133,32 @@ export class Player extends GameObject implements Container {
         }
 
         return null;
+    }
+
+    /** Arbitrary target search, usually for a command */
+    async resolveTarget(target: string, absolute: boolean = false): Promise<GameObject> {
+        if (target === "me") {
+            return this;
+        } else if (target === "here") {
+            return this.getLocation();
+        } else if (target === "parent") {
+            return this.getParent();
+        }
+
+        if (absolute) {
+            // Try direct addressing first
+            const targetObj = await this.world.getObjectById(target);
+            if (targetObj) {
+                return targetObj;
+            }
+
+            const targetPlayer = await this.world.getPlayerByName(target);
+            if (targetPlayer) {
+                return targetPlayer;
+            }
+        }
+
+        return this.find(target);
     }
 
     async sendMessage(message: InteriorMessage | string): Promise<boolean> {

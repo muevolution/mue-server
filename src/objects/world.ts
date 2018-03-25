@@ -1,9 +1,10 @@
 import * as _ from "lodash";
 
-import { CommandRequest, InteriorMessage } from "../../client_types";
+import { CommandRequest } from "../../client_types";
 import { CommandProcessor } from "../commandproc";
 import { BaseTypedEmitter } from "../common";
 import { Logger } from "../logging";
+import { InteriorMessage } from "../netmodels";
 import { AsyncRedisClient, RedisConnection } from "../redis";
 import { Storage } from "../storage";
 import { Action } from "./action";
@@ -32,7 +33,7 @@ export class World {
         return new Storage(this.opts.redisConnection.client);
     }
 
-    public async publishMessage(message: InteriorMessage | string, target?: GameObject): Promise<boolean> {
+    public async publishMessage(message: InteriorMessage | string, target?: GameObject, meta?: {}): Promise<boolean> {
         let channel;
         if (target) {
             let targetId = target.id;
@@ -47,9 +48,12 @@ export class World {
 
         let outboundMessage: InteriorMessage;
         if (typeof message === "string") {
-            outboundMessage = {"message": message};
+            outboundMessage = {"message": message, meta};
         } else if (message) {
             outboundMessage = message;
+            if (meta) {
+                outboundMessage.meta = _.defaults(outboundMessage.meta, meta);
+            }
         } else {
             return false;
         }
@@ -177,7 +181,7 @@ export class World {
         });
     }
 
-    private async sendInterServer(event: string, meta?: {}) {
+    private async sendInterServer(event: InterServerMessage["event"], meta?: {}) {
         return this.opts.redisConnection.client.publishAsync("c:isc", JSON.stringify({event, meta} as InterServerMessage));
     }
 }
