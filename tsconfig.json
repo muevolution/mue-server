@@ -10,6 +10,7 @@
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "build",
+        "rootDir": "src",
         "baseUrl": ".",
         "paths": {
             "*": [
@@ -17,8 +18,5 @@
                 "src/types/*"
             ]
         }
-    },
-    "include": [
-        "src/**/*"
-    ]
+    }
 }
