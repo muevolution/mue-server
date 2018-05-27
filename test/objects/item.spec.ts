@@ -10,11 +10,11 @@ const { redis, world } = init();
 chai.use(chaiSubset);
 chai.use(chaiAsPromised);
 
-describe("Room", () => {
+describe("Item", () => {
     let rootPlayer: Player;
     let rootRoom: Room;
     let playerRoom: Room;
-    let firstRoom: Room;
+    let firstItem: Item;
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
@@ -27,116 +27,115 @@ describe("Room", () => {
         await afterTestGroup(world);
     });
 
-    function createTestRoom(name?: string): Promise<Room> {
-        return Room.create(world, `Test room - ${name}`, rootPlayer, rootRoom, playerRoom);
+    function createTestItem(name?: string): Promise<Item> {
+        return Item.create(world, `Test item - ${name}`, rootPlayer, rootRoom, playerRoom);
     }
 
     // Actual methods
 
     describe(".create()", () => {
         it("should create successfully", async () => {
-            firstRoom = await createTestRoom("Room.create");
-            expect(firstRoom).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
+            firstItem = await createTestItem("Item.create");
+            expect(firstItem).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
         });
     });
 
     describe(".imitate()", () => {
         // TODO: Figure out how to test these specifically
-        xit("should fetch an existing room from cold storage", () => { return; });
-        xit("should fetch an existing room from hot cache", () => { return; });
+        xit("should fetch an existing item from cold storage", () => { return; });
+        xit("should fetch an existing item from hot cache", () => { return; });
 
-        it("should fail if the room does not exist", async () => {
-            const badRoom = Room.imitate(world, "r:invalid");
-            expect(badRoom).to.be.rejectedWith(GameObjectIdDoesNotExist);
+        it("should fail if the item does not exist", async () => {
+            const badItem = Item.imitate(world, "i:invalid");
+            expect(badItem).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 
     describe("#getParent()", () => {
         it("should match", async () => {
-            expect(firstRoom).to.exist;
+            expect(firstItem).to.exist;
             expect(rootRoom).to.exist;
-            expect(await firstRoom.getParent()).to.exist.and.property("id").to.equal(rootRoom.id);
+            expect(await firstItem.getParent()).to.exist.and.property("id").to.equal(rootRoom.id);
         });
     });
 
     describe("#getLocation()", () => {
         it("should match", async () => {
-            expect(firstRoom).to.exist;
+            expect(firstItem).to.exist;
             expect(rootRoom).to.exist;
-            expect(await firstRoom.getLocation()).to.exist.and.property("id").to.equal(playerRoom.id);
+            expect(await firstItem.getLocation()).to.exist.and.property("id").to.equal(playerRoom.id);
         });
     });
 
     describe("#getContents()", () => {
-        let testRoom: Room;
+        let testItem: Item;
         let item: Item;
 
         before(async () => {
-            testRoom = await createTestRoom("Room.getContents");
+            testItem = await createTestItem("Item.getContents");
         });
 
         it("should start empty", async () => {
-            const contents = await testRoom.getContents();
+            const contents = await testItem.getContents();
             expect(contents).to.be.empty;
         });
 
         it("should list an item", async () => {
-            item = await Item.create(world, "Sample item", rootPlayer, playerRoom, testRoom);
+            item = await Item.create(world, "Sample item", rootPlayer, playerRoom, testItem);
 
-            const contents = await testRoom.getContents();
+            const contents = await testItem.getContents();
             expect(contents).to.be.an("array").and.have.lengthOf(1).and.containSubset([{"_type": "i", "_id": item.shortid}]);
         });
 
         it("should lose an item after moved", async () => {
             const actual = await item.move(rootRoom);
             expect(actual).to.be.an("object");
-            expect(actual).to.have.property("oldLocation").and.property("_id", testRoom.shortid);
+            expect(actual).to.have.property("oldLocation").and.property("_id", testItem.shortid);
             expect(actual).to.have.property("newLocation").and.property("_id", rootRoom.shortid);
 
-            const contents = await testRoom.getContents();
+            const contents = await testItem.getContents();
             expect(contents).to.be.empty;
         });
 
         after(async () => {
             await item.destroy();
-            await testRoom.destroy();
+            await testItem.destroy();
         });
     });
 
     describe("#find()", () => {
-        let testRoom: Room;
+        let testItem: Item;
 
         before(async () => {
-            testRoom = await createTestRoom("Room.find");
+            testItem = await createTestItem("Item.find");
         });
 
         describe("items", () => {
             let item: Item;
 
             it("should start with no results", async () => {
-                const actual = await testRoom.find("Sample");
+                const actual = await testItem.find("Sample");
                 expect(actual).to.be.null;
             });
 
             it("should find an item by name", async () => {
-                item = await Item.create(world, "Sample item", rootPlayer, playerRoom, testRoom);
+                item = await Item.create(world, "Sample item", rootPlayer, playerRoom, testItem);
 
-                const actual = await testRoom.find("Sample item");
+                const actual = await testItem.find("Sample item");
                 expect(actual).to.exist.and.to.containSubset({"_type": "i", "_id": item.shortid});
             });
 
             it("should find an item by name with type", async () => {
-                const actual = await testRoom.find("Sample item", GameObjectTypes.ITEM);
+                const actual = await testItem.find("Sample item", GameObjectTypes.ITEM);
                 expect(actual).to.exist.and.to.containSubset({"_type": "i", "_id": item.shortid});
             });
 
-            xit("should find an item in a container", () => { return; });
-            xit("should find an item higher up the parent tree", () => { return; });
+            xit("should not find an item in a container", () => { return; });
+            xit("should not find an item higher up the parent tree", () => { return; });
             xit("should not find an item higher up the location tree", () => { return; });
-            xit("should follow find precedence", () => { return; });
 
             it("should not find an item with the wrong type", async () => {
-                const actual = await testRoom.find("Sample item", GameObjectTypes.ROOM);
+                const actual = await testItem.find("Sample item", GameObjectTypes.ROOM);
                 expect(actual).to.be.null;
             });
 
@@ -149,7 +148,7 @@ describe("Room", () => {
             let action: Action;
 
             it("should start with no results", async () => {
-                const actual = await testRoom.find("sampleact", GameObjectTypes.ACTION);
+                const actual = await testItem.find("sampleact", GameObjectTypes.ACTION);
                 expect(actual).to.be.null;
             });
 
@@ -158,9 +157,9 @@ describe("Room", () => {
             xit("should not find an item higher up the location tree", () => { return; });
 
             it("should find an action by name", async () => {
-                action = await Action.create(world, "sampleact", rootPlayer, testRoom);
+                action = await Action.create(world, "sampleact", rootPlayer, testItem);
 
-                const actual = await testRoom.find("sampleact", GameObjectTypes.ACTION);
+                const actual = await testItem.find("sampleact", GameObjectTypes.ACTION);
                 expect(actual).to.exist.and.to.containSubset({"_type": "a", "_id": action.shortid});
             });
 
@@ -174,7 +173,7 @@ describe("Room", () => {
         });
 
         after(async () => {
-            await testRoom.destroy();
+            await testItem.destroy();
         });
     });
 
@@ -184,24 +183,24 @@ describe("Room", () => {
     });
 
     describe("#destroy()", () => {
-        let testRoom: Room;
+        let testItem: Item;
         let item: Item;
 
         before(async () => {
-            testRoom = await createTestRoom("Room.getContents");
-            item = await Item.create(world, "Ejected Item", rootPlayer, rootRoom, testRoom);
+            testItem = await createTestItem("Item.getContents");
+            item = await Item.create(world, "Ejected Item", rootPlayer, rootRoom, testItem);
         });
 
         it("should destroy a room and eject its contents", async () => {
-            expect(item.location).to.equal(testRoom.id, "Item did not start in expected location");
+            expect(item.location).to.equal(testItem.id, "Item did not start in expected location");
 
             // Destroy the room
-            const success = await testRoom.destroy();
+            const success = await testItem.destroy();
             expect(success).to.be.true;
-            expect(testRoom.destroyed).to.be.true;
+            expect(testItem.destroyed).to.be.true;
 
             // Try to find again
-            const refind = world.getObjectById(testRoom.id);
+            const refind = world.getObjectById(testItem.id);
             expect(refind).to.be.rejectedWith(GameObjectIdDoesNotExist);
 
             // Test spill
