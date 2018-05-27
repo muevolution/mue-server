@@ -2,7 +2,7 @@ import * as _ from "lodash";
 
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
-import { GameObject } from "./gameobject";
+import { GameObject, GameObjectIdDoesNotExist, GameObjectIdExistsError } from "./gameobject";
 import { Item } from "./item";
 import { RoomLocations, RoomParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
@@ -19,6 +19,9 @@ export class Room extends GameObject implements Container {
             "parent": parent ? parent.id : null,
             "location": location ? location.id : parent ? parent.id : null,
         });
+        if (ROOM_CACHE[p.id]) {
+            throw new GameObjectIdExistsError(p.id, GameObjectTypes.ROOM);
+        }
         await world.storage.addObject(p);
         ROOM_CACHE[p.id] = p;
         return p;
@@ -31,7 +34,7 @@ export class Room extends GameObject implements Container {
 
         const meta = await world.storage.getMeta(id);
         if (!meta) {
-            throw new Error(`Room ${id} not found`);
+            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.ROOM);
         }
 
         const p = new Room(world, meta, id);

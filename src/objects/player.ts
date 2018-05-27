@@ -1,9 +1,11 @@
+// tslint:disable:max-classes-per-file
+
 import * as _ from "lodash";
 
 import { InteriorMessage } from "../netmodels";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
-import { GameObject } from "./gameobject";
+import { GameObject, GameObjectIdDoesNotExist } from "./gameobject";
 import { Item } from "./item";
 import { PlayerLocations, PlayerParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
@@ -24,7 +26,7 @@ export class Player extends GameObject implements Container {
         // Make sure a player with this name doesn't already exist
         const exPlayer = await world.storage.findPlayerByName(name);
         if (exPlayer) {
-            throw new Error("Player with this name already exists");
+            throw new PlayerNameAlreadyExistsError(name, exPlayer);
         }
 
         await world.storage.addObject(p);
@@ -39,7 +41,7 @@ export class Player extends GameObject implements Container {
 
         const meta = await world.storage.getMeta(id);
         if (!meta) {
-            throw new Error(`Player ${id} not found`);
+            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.PLAYER);
         }
 
         const p = new Player(world, meta, id);
@@ -186,5 +188,11 @@ export class Player extends GameObject implements Container {
 
     quit(reason?: string) {
         this.emit("quit", reason);
+    }
+}
+
+class PlayerNameAlreadyExistsError extends Error {
+    constructor(private playerName: string, private existingPlayerId: string) {
+        super(`Player with the name ${playerName} already exists [${existingPlayerId}]`);
     }
 }

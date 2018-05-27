@@ -21,6 +21,8 @@ export async function GetContents(world: World, container: GameObject, type?: Ga
 }
 
 export async function SpillContents(world: World, container: GameObjectContainer) {
+    // TODO: This will need to reparent all the children somehow too
+
     const newParent = await container.getLocation();
     const contents = await GetContents(world, container);
     if (contents.length < 1) {

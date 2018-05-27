@@ -1,3 +1,5 @@
+// tslint:disable:max-classes-per-file
+
 import { EventEmitter } from "events";
 
 import { BaseTypedEmitter, generateId } from "../common";
@@ -155,5 +157,17 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
 
     protected invalidateCache(id?: string): void {
         return;
+    }
+}
+
+export class GameObjectIdExistsError extends Error {
+    constructor(private objectId: string, private type: GameObjectTypes) {
+        super(`Object(${type}) with the ID ${objectId} already exists!`);
+    }
+}
+
+export class GameObjectIdDoesNotExist extends Error {
+    constructor(private objectId: string, private type: GameObjectTypes) {
+        super(`Object(${type}) with the ID ${objectId} does not exist`);
     }
 }

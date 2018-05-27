@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 
-import { GameObject } from "./gameobject";
+import { GameObject, GameObjectIdDoesNotExist, GameObjectIdExistsError } from "./gameobject";
 import { ActionLocations, ActionParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
@@ -12,6 +12,8 @@ export interface ActionMetaData extends MetaData {
     target?: string;
 }
 
+const ACTION_CACHE = {} as {[id: string]: Action};
+
 export class Action extends GameObject<ActionMetaData> {
     static async create(world: World, name: string, creator: Player, location?: ActionLocations) {
         const p = new Action(world, {
@@ -20,14 +22,21 @@ export class Action extends GameObject<ActionMetaData> {
             "parent": creator.id,
             "location": location ? location.id : creator.id
         });
+        if (ACTION_CACHE[p.id]) {
+            throw new GameObjectIdExistsError(p.id, GameObjectTypes.ACTION);
+        }
         await world.storage.addObject(p);
         return p;
     }
 
     static async imitate(world: World, id: string) {
+        if (ACTION_CACHE[id]) {
+            return ACTION_CACHE[id];
+        }
+
         const meta = await world.storage.getMeta(id);
         if (!meta) {
-            throw new Error(`Action ${id} not found`);
+            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.ACTION);
         }
 
         return new Action(world, meta, id);

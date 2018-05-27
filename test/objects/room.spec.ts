@@ -201,7 +201,6 @@ describe("Room", () => {
         });
 
         it("should destroy a room and eject its contents", async () => {
-            // console.log("player room id", playerRoom.id, "test room id", testRoom.id, "root room id", rootRoom.id);
             expect(item.location).to.equal(testRoom.id, "Item did not start in expected location");
 
             // Destroy the room

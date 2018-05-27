@@ -1,6 +1,6 @@
 import { VMScript } from "vm2";
 
-import { GameObject } from "./gameobject";
+import { GameObject, GameObjectIdDoesNotExist, GameObjectIdExistsError } from "./gameobject";
 import { ScriptLocations, ScriptParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
@@ -28,6 +28,9 @@ export class Script extends GameObject {
             "parent": creator.id,
             "location": location ? location.id : creator.id
         });
+        if (SCRIPT_CACHE[p.id]) {
+            throw new GameObjectIdExistsError(p.id, GameObjectTypes.SCRIPT);
+        }
         await world.storage.addObject(p);
         SCRIPT_CACHE[p.id] = p;
         return p;
@@ -40,7 +43,7 @@ export class Script extends GameObject {
 
         const meta = await world.storage.getMeta(id);
         if (!meta) {
-            throw new Error(`Script ${id} not found`);
+            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.SCRIPT);
         }
 
         const code = await world.storage.getScriptCode(id);
