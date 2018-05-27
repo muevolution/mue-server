@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 
 import { LocalCommand } from "../netmodels";
-import { GameObject, Player, World } from "../objects";
+import { Player, World } from "../objects";
 
 const ARG_REGEX = /(.+)=(.+?):(.+)?/;
 

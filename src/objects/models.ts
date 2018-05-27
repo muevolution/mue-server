@@ -1,5 +1,3 @@
-import { Storage } from "../storage";
-
 export enum GameObjectTypes {
     ROOM = "r",
     PLAYER = "p",

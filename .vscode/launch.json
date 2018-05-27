@@ -22,10 +22,9 @@
             "name": "Launch via NPM",
             "runtimeExecutable": "npm",
             "runtimeArgs": [
-                "run-script",
+                "run",
                 "debug"
             ],
-            "port": 9229,
             "sourceMaps": true,
             "outFiles": [
                 "${workspaceRoot}/build/**/*.js"

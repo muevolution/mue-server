@@ -10,10 +10,32 @@ export interface Container {
     findIn(term: string, type?: GameObjectTypes): Promise<GameObject>;
 }
 
+export interface GameObjectContainer extends GameObject, Container {}
+
 export async function GetContents(world: World, container: GameObject, type?: GameObjectTypes) {
     const contentIds = await world.storage.getContents(container, type);
     const contentP = _.map(contentIds, (id) => {
         return world.getObjectById(id, type);
     });
     return Promise.all(contentP);
+}
+
+export async function SpillContents(world: World, container: GameObjectContainer) {
+    const newParent = await container.getLocation();
+    const contents = await GetContents(world, container);
+    if (contents.length < 1) {
+        return true;
+    }
+
+    // Move all the objects in a transaction
+    // TODO: Traditionally this sends everything 'home', should we dump to parent instead?
+    const result = await world.storage.moveObjects(contents, newParent, container);
+    if (!result) {
+        return false;
+    }
+
+    // Update all the objects with their new container
+    _.forEach(contents, (obj) => obj.postMove(newParent, container));
+
+    return true;
 }

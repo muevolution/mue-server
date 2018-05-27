@@ -1,3 +1,6 @@
 .git
 node_modules
 src
+test
+coverage
+mochawesome-report

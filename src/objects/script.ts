@@ -1,11 +1,9 @@
 import { VMScript } from "vm2";
 
 import { GameObject } from "./gameobject";
-import { Item } from "./item";
 import { ScriptLocations, ScriptParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
-import { Room } from "./room";
 import { World } from "./world";
 
 let SCRIPT_CACHE = {} as {[id: string]: Script};

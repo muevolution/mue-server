@@ -1,5 +1,5 @@
 build
-mue.config.json
+mue.*.json
 
 # Logs
 logs
@@ -19,6 +19,7 @@ lib-cov
 
 # Coverage directory used by tools like istanbul
 coverage
+mochawesome-report
 
 # nyc test coverage
 .nyc_output

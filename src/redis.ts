@@ -15,7 +15,7 @@ export class RedisConnection {
 
     public client: AsyncRedisClient;
 
-    constructor(private clientSync: redis.RedisClient) {
+    constructor(clientSync: redis.RedisClient) {
         this.client = clientSync as AsyncRedisClient;
     }
 
@@ -51,6 +51,7 @@ export interface AsyncRedisClient extends redis.RedisClient {
     unsubscribeAsync(channel: string | string[]): Promise<string>;
     publishAsync(channel: string, value: string): Promise<number>;
 
+    quitAsync(): Promise<"OK">;
     flushdbAsync(): Promise<string>;
 }
 

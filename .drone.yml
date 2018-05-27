@@ -8,7 +8,18 @@ pipeline:
     image: node:carbon-alpine
     commands:
       - npm install
-      - node_modules/.bin/gulp build
+      - npm run build
+
+  test:
+    image: node:carbon-alpine
+    commands:
+      - sleep 10 # Bring up redis
+      - npm run test
+      - npm run test:upload
+    secrets: [ aws_access_key_id, aws_secret_access_key ]
+    environment:
+      - NODE_ENV=test
+      - REDIS__HOST=redis
 
   publish_npm:
     image: plugins/npm
@@ -64,3 +75,7 @@ pipeline:
     secrets: [ neopush_api_key ]
     when:
       status: [ failure, changed ]
+
+services:
+  redis:
+    image: redis

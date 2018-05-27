@@ -3,7 +3,6 @@ import * as fs from "fs";
 import * as glob from "glob";
 import * as _ from "lodash";
 
-import { Logger } from "./logging";
 import { Action, GameObjectTypes, Item, Player, Room, Script, World } from "./objects";
 
 const gg = bluebird.promisify(glob);

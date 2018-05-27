@@ -7,12 +7,16 @@ export interface TelnetConfig {
 }
 
 function loadConfig() {
-    const n = nconf
-        .env({"separator": "__", "parseValues": true})
-        .file({"file": "mue.config.json", "dir": "../"})
-        .defaults({
-            "port": 3000
-        });
+    const n = nconf.env({"separator": "__", "parseValues": true});
+
+    if (process.env.NODE_ENV === "test") {
+        n.file({"file": "mue.config.test.json", "dir": "../"});
+    }
+
+    n.file({"file": "mue.config.json", "dir": "../"});
+    n.defaults({
+        "port": 3000
+    });
     n.load();
     return n;
 }

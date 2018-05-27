@@ -4,6 +4,7 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "Build",
             "type": "gulp",
             "task": "build",
             "problemMatcher": [
@@ -13,6 +14,15 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Test",
+            "type": "process",
+            "command": "npm test",
+            "problemMatcher": [
+                "$tsc"
+            ],
+            "group": "test"
         }
     ]
 }

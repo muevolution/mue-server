@@ -1,7 +1,6 @@
 import * as _ from "lodash";
 import * as formatter from "string-format";
 
-import { MessageFormats } from "./netmodels";
 import { World } from "./objects";
 
 function safeArgs(args: {[key: string]: any}) {

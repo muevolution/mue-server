@@ -1,11 +1,10 @@
 import * as Bluebird from "bluebird";
-import { VM } from "vm2";
 import * as _ from "lodash";
+import { VM } from "vm2";
 
 import { JsSandbox } from "./js-sandbox";
-import { Logger } from "./logging";
 import { InteriorMessage, LocalCommand, MessageFormats } from "./netmodels";
-import { GameObjectTypes, Player, Script, World } from "./objects";
+import { Player, Script, World } from "./objects";
 
 // TODO: Some form of timeslicing per player
 

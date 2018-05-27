@@ -1,8 +1,8 @@
 import * as _ from "lodash";
 import { Multi } from "redis";
 
-import { AllContainers, GameObject, GameObjectTypes, MetaData, MetaKeys, RootFields, splitExtendedId } from "./objects";
-import { AsyncRedisClient, AsyncRedisMulti } from "./redis";
+import { GameObject, GameObjectTypes, MetaData, RootFields, splitExtendedId } from "./objects";
+import { AsyncRedisClient } from "./redis";
 
 export type PropValues = string | number | Array<string | number>;
 export interface PropStructure {
@@ -72,8 +72,28 @@ export class Storage {
         return multi.execAsync();
     }
 
-    destroyObject(object: GameObject) {
-        return this.client.lremAsync(Storage.getObjectKeyStructure(object), object.id);
+    async destroyObject(object: GameObject, recursive?: boolean) {
+        const multi = this.client.multi();
+
+        // Remove primary properties
+        multi.del(Storage.getPropKeyStructure(object));
+        multi.del(Storage.getContentsKeyStructure(object));
+        multi.del(Storage.getMetaKeyStructure(object));
+
+        if (object.type === GameObjectTypes.PLAYER) {
+            multi.lrem(Storage.getByNameKeyStructure(object.type), 0, object.id);
+        } else if (object.type === GameObjectTypes.SCRIPT) {
+            multi.del(Storage.getScriptKeyStructure(object));
+        }
+
+        // Remove from global type list
+        multi.lrem(Storage.getObjectKeyStructure(object), 0, object.id);
+
+        // Remove from current location
+        multi.lrem(Storage.getContentsKeyStructure(object.location), 0, object.id);
+
+        // Commit deletion
+        return multi.execAsync();
     }
 
     getAllPlayers() {
@@ -140,14 +160,21 @@ export class Storage {
 
     async reparentObject(object: GameObject | string, newParent: GameObject | string, oldParent?: GameObject | string): Promise<boolean> {
         const multi = this.client.multi();
-        await this.reparentMoveInMulti(multi, "parent", object, newParent, oldParent);
+        this.reparentMoveInMulti(multi, "parent", object, newParent, oldParent);
         await multi.execAsync();
         return true;
     }
 
     async moveObject(object: GameObject | string, newLocation: GameObject | string, oldLocation?: GameObject | string): Promise<boolean> {
         const multi = this.client.multi();
-        await this.reparentMoveInMulti(multi, "location", object, newLocation, oldLocation);
+        this.reparentMoveInMulti(multi, "location", object, newLocation, oldLocation);
+        await multi.execAsync();
+        return true;
+    }
+
+    async moveObjects(objects: GameObject[] | string[], newLocation: GameObject | string, oldLocation?: GameObject | string): Promise<boolean> {
+        const multi = this.client.multi();
+        _.forEach(objects, (object: GameObject | string) => this.reparentMoveInMulti(multi, "location", object, newLocation, oldLocation));
         await multi.execAsync();
         return true;
     }

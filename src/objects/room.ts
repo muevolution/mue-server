@@ -1,11 +1,11 @@
 import * as _ from "lodash";
 
 import { Action } from "./action";
-import { Container, GetContents } from "./container";
+import { Container, GetContents, SpillContents } from "./container";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
 import { RoomLocations, RoomParents } from "./model-aliases";
-import { GameObjectTypes, MetaData, MetaKeys } from "./models";
+import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
 import { World } from "./world";
 
@@ -109,5 +109,24 @@ export class Room extends GameObject implements Container {
         }
 
         return null;
+    }
+
+    async destroy(): Promise<boolean> {
+        if (!await SpillContents(this.world, this)) {
+            // TODO: Throw error or something
+            return false;
+        }
+
+        return super.destroy();
+    }
+
+    protected invalidateCache(id?: string) {
+        if (id) {
+            delete ROOM_CACHE[id];
+        } else {
+            _.forEach(ROOM_CACHE, (v, k) => {
+                delete ROOM_CACHE[k];
+            });
+        }
     }
 }

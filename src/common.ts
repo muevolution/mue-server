@@ -1,6 +1,5 @@
 // tslint:disable:max-classes-per-file
 
-import { EventEmitter } from "events";
 import * as shortid from "shortid";
 import * as util from "util";
 

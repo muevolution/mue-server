@@ -3,13 +3,11 @@ import "source-map-support/register";
 import * as express from "express";
 import * as aa from "express-async-await";
 import * as http from "http";
-import * as _ from "lodash";
 import * as socketio from "socket.io";
 
-import { BridgeArbitrator } from "./bridge";
 import { config } from "./config";
 import { initLogger, Logger } from "./logging";
-import { Player, Room, World } from "./objects";
+import { World } from "./objects";
 import { PubSub } from "./pubsub";
 import { RedisConnection } from "./redis";
 

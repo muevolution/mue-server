@@ -1,5 +1,4 @@
 export * from "./models";
-export * from "./model-aliases";
 
 export * from "./gameobject";
 export * from "./action";

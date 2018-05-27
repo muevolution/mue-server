@@ -2,7 +2,7 @@ import * as _ from "lodash";
 
 import { InteriorMessage } from "../netmodels";
 import { Action } from "./action";
-import { Container, GetContents } from "./container";
+import { Container, GetContents, SpillContents } from "./container";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
 import { PlayerLocations, PlayerParents } from "./model-aliases";
@@ -169,6 +169,15 @@ export class Player extends GameObject implements Container {
         }
 
         return this.find(target, undefined, true);
+    }
+
+    async destroy(): Promise<boolean> {
+        if (!await SpillContents(this.world, this)) {
+            // TODO: Throw error or something
+            return false;
+        }
+
+        return super.destroy();
     }
 
     async sendMessage(message: InteriorMessage | string): Promise<boolean> {

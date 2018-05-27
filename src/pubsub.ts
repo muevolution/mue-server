@@ -3,7 +3,6 @@ import * as _ from "lodash";
 import {
     ClientToServer,
     CommunicationMessage,
-    ErrorResponse,
     ServerToClient
 } from "../client_types";
 import { CommandProcessor } from "./commandproc";
@@ -13,11 +12,6 @@ import { FormattedMessage } from "./formatter";
 import { InteriorMessage } from "./netmodels";
 import { ObjectMoveEvent, Player, PlayerMessage, World } from "./objects";
 import { AsyncRedisClient } from "./redis";
-
-interface LocalMessage {
-    message: string;
-    substitutions: {[key: string]: string};
-}
 
 export class PubSub {
     private _player: Player;

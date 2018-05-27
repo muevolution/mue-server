@@ -31,5 +31,5 @@ interface JsSandbox {
     // Expose some safe JS convienience libraries
     "Library": {
         "lodash": {}; // lodash
-    }
+    };
 }

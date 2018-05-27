@@ -1,5 +1,4 @@
 import { EventEmitter } from "events";
-import * as _ from "lodash";
 
 import { BaseTypedEmitter, generateId } from "../common";
 import { PropStructure, PropValues } from "../storage";
@@ -24,6 +23,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     protected _meta: MD;
     private _id: string;
     private _type: GameObjectTypes;
+    private _isDestroyed: boolean;
     private tupdater: BaseTypedEmitter<GameObjectMessage, GameObjectMessage>;
 
     protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
@@ -48,6 +48,10 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
 
     public get type() {
         return this._type;
+    }
+
+    public get destroyed() {
+        return this._isDestroyed;
     }
 
     public get meta(): Readonly<MD> {
@@ -87,6 +91,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     }
 
     public matchName(term: string): boolean {
+        // TODO: Add fuzzy matching
         return term.trim().toLowerCase() === this.name.toLowerCase();
     }
 
@@ -126,14 +131,29 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
             return null;
         }
 
+        return this.postMove(newLocation, oldLocation);
+    }
+
+    public postMove(newLocation: AllContainers, oldLocation?: GameObject): {oldLocation?: GameObject, newLocation: GameObject} {
         this._meta.location = newLocation.id;
 
-        const output = { oldLocation, "newLocation": newLocation as GameObject };
+        const output = { oldLocation, newLocation };
         this.tupdater.emit("move", output);
         return output;
     }
 
-    toString() {
+    public async destroy(): Promise<boolean> {
+        await this.world.storage.destroyObject(this);
+        this._isDestroyed = true;
+        this.invalidateCache(this.id);
+        return true;
+    }
+
+    public toString() {
         return `'${this.name}' [${this.id}]`;
+    }
+
+    protected invalidateCache(id?: string): void {
+        return;
     }
 }

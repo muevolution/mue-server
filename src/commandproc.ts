@@ -3,8 +3,8 @@ import * as _ from "lodash";
 import { CommandRequest, ExpandedCommandRequest, ShortCommandRequest } from "../client_types";
 import * as builtins from "./builtins";
 import { Logger } from "./logging";
-import { InteriorMessage, LocalCommand } from "./netmodels";
-import { Action, GameObject, GameObjectTypes, Player, Room, Script, World } from "./objects";
+import { LocalCommand } from "./netmodels";
+import { Action, GameObjectTypes, Player, Room, Script, World } from "./objects";
 import { ScriptManager } from "./scriptmanager";
 
 export class CommandProcessor {

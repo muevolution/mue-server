@@ -15,6 +15,11 @@
         "interface-name": false,
         "radix": false,
         "no-namespace": false,
-        "member-access": false
-    }
+        "member-access": false,
+        "no-unused-expression": false,
+        "no-unused-expression-chai": true
+    },
+    "rulesDirectory": [
+        "tslint-no-unused-expression-chai"
+    ]
 }

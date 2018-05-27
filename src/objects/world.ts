@@ -2,7 +2,6 @@ import * as _ from "lodash";
 
 import { CommandRequest } from "../../client_types";
 import { CommandProcessor } from "../commandproc";
-import { BaseTypedEmitter } from "../common";
 import { Logger } from "../logging";
 import { InteriorMessage } from "../netmodels";
 import { AsyncRedisClient, RedisConnection } from "../redis";
@@ -10,7 +9,7 @@ import { Storage } from "../storage";
 import { Action } from "./action";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
-import { GameObjectTypes, InterServerMessage, MetaData, RootFields, splitExtendedId } from "./models";
+import { GameObjectTypes, InterServerMessage, RootFields, splitExtendedId } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
 import { Script } from "./script";
@@ -27,6 +26,11 @@ export class World {
     public async init(): Promise<void> {
         Logger.info(`ISC> Joining cluster with ${await this.getActiveServers()} active servers`);
         await this.configureInterServer();
+    }
+
+    public async shutdown(): Promise<void> {
+        await this.isc.quitAsync();
+        await this.opts.redisConnection.client.quitAsync();
     }
 
     public get storage(): Storage {

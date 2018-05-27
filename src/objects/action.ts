@@ -1,7 +1,6 @@
 import * as _ from "lodash";
 
 import { GameObject } from "./gameobject";
-import { Item } from "./item";
 import { ActionLocations, ActionParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";

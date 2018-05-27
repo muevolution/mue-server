@@ -1,13 +1,11 @@
 import * as _ from "lodash";
 
 import { Action } from "./action";
-import { Container, GetContents } from "./container";
+import { Container, GetContents, SpillContents } from "./container";
 import { GameObject } from "./gameobject";
 import { ItemLocations, ItemParents } from "./model-aliases";
-import { GameObjectTypes, MetaData, MetaKeys } from "./models";
+import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
-import { Room } from "./room";
-import { Script } from "./script";
 import { World } from "./world";
 
 export class Item extends GameObject implements Container {
@@ -61,5 +59,14 @@ export class Item extends GameObject implements Container {
 
         // Test general item names
         return _.find(contents, (c) => c.type === type && c.matchName(term));
+    }
+
+    async destroy(): Promise<boolean> {
+        if (!await SpillContents(this.world, this)) {
+            // TODO: Throw error or something
+            return false;
+        }
+
+        return super.destroy();
     }
 }
