@@ -20,7 +20,7 @@ const ALL_GAME_OBJECT_TYPES = [
     GameObjectTypes.ACTION
 ];
 
-export function splitExtendedId(id: string): {"id": string, "type"?: GameObjectTypes} {
+export function splitExtendedId(id: string, checkType?: GameObjectTypes): {"id": string, "type"?: GameObjectTypes} {
     if (!id) {
         return null;
     }
@@ -37,6 +37,8 @@ export function splitExtendedId(id: string): {"id": string, "type"?: GameObjectT
 
         if (ALL_GAME_OBJECT_TYPES.indexOf(type) < 0) {
             throw new Error(`Invalid object type (${type})`);
+        } else if (checkType && type !== checkType) {
+            throw new Error(`Object ID ${id} does not match requested type ${checkType}`);
         }
 
         return {type, "id": a[1]};

@@ -19,7 +19,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         }
 
         const split = splitExtendedId(data);
-        return (split.type === type);
+        return (split && (split.type === type));
     }
 
     protected _meta: MD;
@@ -30,7 +30,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
 
     protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
         super();
-        this._id = id ? splitExtendedId(id).id : generateId();
+        this._id = id ? splitExtendedId(id, objectType).id : generateId();
         this._type = objectType;
         this._meta = meta;
         this.tupdater = new BaseTypedEmitter(this);
