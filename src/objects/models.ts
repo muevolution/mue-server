@@ -12,12 +12,38 @@ export enum RootFields {
     GOD = "god"
 }
 
+const ALL_GAME_OBJECT_TYPES = [
+    GameObjectTypes.ROOM,
+    GameObjectTypes.PLAYER,
+    GameObjectTypes.ITEM,
+    GameObjectTypes.SCRIPT,
+    GameObjectTypes.ACTION
+];
+
 export function splitExtendedId(id: string): {"id": string, "type"?: GameObjectTypes} {
+    if (!id) {
+        return null;
+    }
+
     const a = id.split(":");
     if (a.length < 2) {
+        if (!a[0]) {
+            return null;
+        }
+
         return {"id": a[0]};
     } else {
-        return {"type": a[0] as GameObjectTypes, "id": a[1]};
+        if (!a[0] || !a[1]) {
+            return null;
+        }
+
+        const type = a[0] as GameObjectTypes;
+
+        if (ALL_GAME_OBJECT_TYPES.indexOf(type) < 0) {
+            throw new Error(`Invalid object type (${type})`);
+        }
+
+        return {type, "id": a[1]};
     }
 }
 
