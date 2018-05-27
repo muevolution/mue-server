@@ -189,6 +189,10 @@ export class Player extends GameObject implements Container {
     quit(reason?: string) {
         this.emit("quit", reason);
     }
+
+    protected getCache() {
+        return PLAYER_CACHE;
+    }
 }
 
 class PlayerNameAlreadyExistsError extends Error {

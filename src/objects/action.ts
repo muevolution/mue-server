@@ -75,4 +75,8 @@ export class Action extends GameObject<ActionMetaData> {
 
         return _(this.name).split(";").map((t) => t.toLowerCase()).includes(command.toLowerCase());
     }
+
+    protected getCache() {
+        return ACTION_CACHE;
+    }
 }

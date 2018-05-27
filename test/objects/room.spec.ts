@@ -2,7 +2,7 @@ import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
-import { Action, GameObjectTypes, Item, Player, Room } from "../../src/objects";
+import { Action, GameObjectTypes, Item, Player, Room, GameObjectIdDoesNotExist } from "../../src/objects";
 import { afterTestGroup, beforeTestGroup, init } from "../common";
 
 const { redis, world } = init();
@@ -37,6 +37,17 @@ describe("Room", () => {
         it("should create successfully", async () => {
             firstRoom = await createTestRoom("Room.create");
             expect(firstRoom).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
+        });
+    });
+
+    describe(".imitate()", () => {
+        // TODO: Figure out how to test these specifically
+        xit("should fetch an existing room from cold storage", () => { return; });
+        xit("should fetch an existing room from hot cache", () => { return; });
+
+        it("should fail if the room does not exist", async () => {
+            const badRoom = Room.imitate(world, "r:invalid");
+            expect(badRoom).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 
@@ -119,21 +130,10 @@ describe("Room", () => {
                 expect(actual).to.exist.and.to.containSubset({"_type": "i", "_id": item.shortid});
             });
 
-            xit("should find an item in a container", () => {
-                return;
-            });
-
-            xit("should find an item higher up the parent tree", () => {
-                return;
-            });
-
-            xit("should not find an item higher up the location tree", () => {
-                return;
-            });
-
-            xit("should follow find precedence", () => {
-                return;
-            });
+            xit("should find an item in a container", () => { return; });
+            xit("should find an item higher up the parent tree", () => { return; });
+            xit("should not find an item higher up the location tree", () => { return; });
+            xit("should follow find precedence", () => { return; });
 
             it("should not find an item with the wrong type", async () => {
                 const actual = await testRoom.find("Sample item", GameObjectTypes.ROOM);
@@ -153,17 +153,9 @@ describe("Room", () => {
                 expect(actual).to.be.null;
             });
 
-            xit("should find an action in a container", () => {
-                return;
-            });
-
-            xit("should find an item higher up the parent tree", () => {
-                return;
-            });
-
-            xit("should not find an item higher up the location tree", () => {
-                return;
-            });
+            xit("should find an action in a container", () => { return; });
+            xit("should find an item higher up the parent tree", () => { return; });
+            xit("should not find an item higher up the location tree", () => { return; });
 
             it("should find an action by name", async () => {
                 action = await Action.create(world, "sampleact", rootPlayer, testRoom);
@@ -210,7 +202,7 @@ describe("Room", () => {
 
             // Try to find again
             const refind = world.getObjectById(testRoom.id);
-            expect(refind).to.be.rejectedWith(Error);
+            expect(refind).to.be.rejectedWith(GameObjectIdDoesNotExist);
 
             // Test spill
             expect(item.location).to.equal(playerRoom.id, "Item did not end up in expected location");

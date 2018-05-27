@@ -82,6 +82,10 @@ export class Script extends GameObject {
         await this.world.storage.setScriptCode(this, code);
     }
 
+    protected getCache() {
+        return SCRIPT_CACHE;
+    }
+
     private loadCode(code: string) {
         this._code = code;
         this.compile();

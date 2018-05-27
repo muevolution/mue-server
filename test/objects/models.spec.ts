@@ -25,6 +25,11 @@ describe("Models", () => {
             expect(actual).to.be.null;
         });
 
+        it("should fail when object type but no id", () => {
+            const actual = splitExtendedId("r:");
+            expect(actual).to.be.null;
+        });
+
         it("should throw on an invalid object type", () => {
             const actual = () => splitExtendedId("_:asdf");
             expect(actual).to.throw();

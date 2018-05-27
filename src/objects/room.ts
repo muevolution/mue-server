@@ -123,13 +123,7 @@ export class Room extends GameObject implements Container {
         return super.destroy();
     }
 
-    protected invalidateCache(id?: string) {
-        if (id) {
-            delete ROOM_CACHE[id];
-        } else {
-            _.forEach(ROOM_CACHE, (v, k) => {
-                delete ROOM_CACHE[k];
-            });
-        }
+    protected getCache() {
+        return ROOM_CACHE;
     }
 }

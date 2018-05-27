@@ -155,8 +155,23 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return `'${this.name}' [${this.id}]`;
     }
 
+    protected getCache(): {[id: string]: GameObject} {
+        return null;
+    }
+
     protected invalidateCache(id?: string): void {
-        return;
+        const cache = this.getCache();
+        if (!cache) {
+            return;
+        }
+
+        if (id) {
+            delete cache[id];
+        } else {
+            Object.keys(cache).map((k) => {
+                delete cache[k];
+            });
+        }
     }
 }
 

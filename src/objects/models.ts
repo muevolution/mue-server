@@ -27,13 +27,9 @@ export function splitExtendedId(id: string): {"id": string, "type"?: GameObjectT
 
     const a = id.split(":");
     if (a.length < 2) {
-        if (!a[0]) {
-            return null;
-        }
-
         return {"id": a[0]};
     } else {
-        if (!a[0] || !a[1]) {
+        if (!a[1]) {
             return null;
         }
 

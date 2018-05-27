@@ -81,4 +81,8 @@ export class Item extends GameObject implements Container {
 
         return super.destroy();
     }
+
+    protected getCache() {
+        return ITEM_CACHE;
+    }
 }
