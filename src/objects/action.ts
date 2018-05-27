@@ -55,7 +55,7 @@ export class Action extends GameObject<ActionMetaData> {
     }
 
     get target() {
-        return this._meta.target;
+        return this._meta.target || null;
     }
 
     setTarget(target: Room | Script): Promise<boolean> {
