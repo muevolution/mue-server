@@ -2,7 +2,8 @@ import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
-import { Action, GameObjectIdDoesNotExist, GameObjectTypes, Item, Player, Room } from "../../src/objects";
+import { GameObjectIdDoesNotExist } from "../../src/errors";
+import { Action, GameObjectTypes, Item, Player, Room } from "../../src/objects";
 import { afterTestGroup, beforeTestGroup, init } from "../common";
 
 const { redis, world } = init();
@@ -47,7 +48,7 @@ describe("Room", () => {
 
         it("should fail if the room does not exist", async () => {
             const badRoom = Room.imitate(world, "r:invalid");
-            expect(badRoom).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(badRoom).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 
@@ -202,7 +203,7 @@ describe("Room", () => {
 
             // Try to find again
             const refind = world.getObjectById(testRoom.id);
-            expect(refind).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(refind).to.be.rejectedWith(GameObjectIdDoesNotExist);
 
             // Test spill
             expect(item.location).to.equal(playerRoom.id, "Item did not end up in expected location");

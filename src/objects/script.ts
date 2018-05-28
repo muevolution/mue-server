@@ -1,6 +1,7 @@
 import { VMScript } from "vm2";
 
-import { GameObject, GameObjectIdDoesNotExist, GameObjectIdExistsError } from "./gameobject";
+import { GameObjectIdDoesNotExist, GameObjectIdExistsError } from "../errors";
+import { GameObject } from "./gameobject";
 import { ScriptLocations, ScriptParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";

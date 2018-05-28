@@ -121,7 +121,7 @@ export class Storage {
     async getProps(owner: GameObject | string): Promise<PropStructure> {
         const props = await this.client.hgetallAsync(Storage.getPropKeyStructure(owner));
         const deserialized = _.mapValues(props, (v, k) => JSON.parse(v));
-        return deserialized;
+        return deserialized || {};
     }
 
     async setProp(owner: GameObject | string, path: string, value: PropValues): Promise<boolean> {

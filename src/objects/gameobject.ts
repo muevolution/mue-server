@@ -1,11 +1,10 @@
-// tslint:disable:max-classes-per-file
-
 import { EventEmitter } from "events";
 
 import { BaseTypedEmitter, generateId } from "../common";
+import { GameObjectDestroyedError, InvalidGameObjectContainerError } from "../errors";
 import { PropStructure, PropValues } from "../storage";
 import { AllContainers } from "./model-aliases";
-import { GameObjectMessage, GameObjectTypes, IGameObject, MetaData, splitExtendedId } from "./models";
+import { ALL_CONTAINER_TYPES, GameObjectMessage, GameObjectTypes, IGameObject, MetaData, splitExtendedId } from "./models";
 import { World } from "./world";
 
 export abstract class GameObject<MD extends MetaData = MetaData> extends EventEmitter implements IGameObject {
@@ -25,7 +24,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     protected _meta: MD;
     private _id: string;
     private _type: GameObjectTypes;
-    private _isDestroyed: boolean;
+    private _isDestroyed: boolean = false;
     private tupdater: BaseTypedEmitter<GameObjectMessage, GameObjectMessage>;
 
     protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
@@ -93,17 +92,29 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     }
 
     public matchName(term: string): boolean {
+        if (!term) {
+            return false;
+        }
+
         // TODO: Add fuzzy matching
         return term.trim().toLowerCase() === this.name.toLowerCase();
     }
 
     public async rename(newName: string): Promise<boolean> {
+        if (!newName) {
+            return false;
+        }
+
         const curMeta = await this.world.storage.getMeta(this) as MD;
         const oldName = curMeta.name;
         curMeta.name = newName;
         this._meta = curMeta;
         const updatedMeta = await this.world.storage.updateMeta(this, curMeta);
-        const updatedIndex = await this.world.storage.updatePlayerNameIndex(oldName, this);
+        let updatedIndex = true;
+
+        if (this.type === GameObjectTypes.PLAYER) {
+            updatedIndex = await this.world.storage.updatePlayerNameIndex(oldName, this);
+        }
 
         this.tupdater.emit("rename", { oldName, newName });
 
@@ -111,6 +122,14 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     }
 
     public async reparent(newParent: GameObject): Promise<{oldParent?: GameObject, newParent: GameObject}> {
+        if (!newParent) {
+            return null;
+        }
+
+        if (newParent.destroyed) {
+            throw new GameObjectDestroyedError(newParent.id, newParent.type);
+        }
+
         const parent = await this.world.storage.getMeta(this, "parent");
         const oldParent = await this.world.getObjectById(parent);
         const result = await this.world.storage.reparentObject(this, newParent, oldParent);
@@ -126,6 +145,18 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     }
 
     public async move(newLocation: AllContainers): Promise<{oldLocation?: GameObject, newLocation: GameObject}> {
+        if (!newLocation) {
+            return null;
+        }
+
+        if (newLocation.destroyed) {
+            throw new GameObjectDestroyedError(newLocation.id, newLocation.type);
+        }
+
+        if (ALL_CONTAINER_TYPES.indexOf(newLocation.type) < 0) {
+            throw new InvalidGameObjectContainerError(newLocation.id, newLocation.type);
+        }
+
         const oldLocationEid = await this.world.storage.getMeta(this, "location");
         const oldLocation = await this.world.getObjectById(oldLocationEid);
         const result = await this.world.storage.moveObject(this, newLocation as GameObject, oldLocation);
@@ -172,17 +203,5 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
                 delete cache[k];
             });
         }
-    }
-}
-
-export class GameObjectIdExistsError extends Error {
-    constructor(private objectId: string, private type: GameObjectTypes) {
-        super(`Object(${type}) with the ID ${objectId} already exists!`);
-    }
-}
-
-export class GameObjectIdDoesNotExist extends Error {
-    constructor(private objectId: string, private type: GameObjectTypes) {
-        super(`Object(${type}) with the ID ${objectId} does not exist`);
     }
 }

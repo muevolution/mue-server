@@ -1,8 +1,9 @@
 import * as _ from "lodash";
 
+import { GameObjectIdDoesNotExist, GameObjectIdExistsError } from "../errors";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
-import { GameObject, GameObjectIdDoesNotExist, GameObjectIdExistsError } from "./gameobject";
+import { GameObject } from "./gameobject";
 import { ItemLocations, ItemParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";

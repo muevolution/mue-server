@@ -12,12 +12,18 @@ export enum RootFields {
     GOD = "god"
 }
 
-const ALL_GAME_OBJECT_TYPES = [
+export const ALL_GAME_OBJECT_TYPES: GameObjectTypes[] = [
     GameObjectTypes.ROOM,
     GameObjectTypes.PLAYER,
     GameObjectTypes.ITEM,
     GameObjectTypes.SCRIPT,
     GameObjectTypes.ACTION
+];
+
+export const ALL_CONTAINER_TYPES: GameObjectTypes[] = [
+    GameObjectTypes.ROOM,
+    GameObjectTypes.PLAYER,
+    GameObjectTypes.ITEM
 ];
 
 export function splitExtendedId(id: string, checkType?: GameObjectTypes): {"id": string, "type"?: GameObjectTypes} {

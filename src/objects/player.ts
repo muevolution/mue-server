@@ -1,11 +1,10 @@
-// tslint:disable:max-classes-per-file
-
 import * as _ from "lodash";
 
+import { GameObjectIdDoesNotExist, PlayerNameAlreadyExistsError } from "../errors";
 import { InteriorMessage } from "../netmodels";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
-import { GameObject, GameObjectIdDoesNotExist } from "./gameobject";
+import { GameObject } from "./gameobject";
 import { Item } from "./item";
 import { PlayerLocations, PlayerParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
@@ -192,11 +191,5 @@ export class Player extends GameObject implements Container {
 
     protected getCache() {
         return PLAYER_CACHE;
-    }
-}
-
-class PlayerNameAlreadyExistsError extends Error {
-    constructor(private playerName: string, private existingPlayerId: string) {
-        super(`Player with the name ${playerName} already exists [${existingPlayerId}]`);
     }
 }

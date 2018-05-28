@@ -2,7 +2,8 @@ import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
-import { Action, GameObjectIdDoesNotExist, Player, Room } from "../../src/objects";
+import { GameObjectIdDoesNotExist } from "../../src/errors";
+import { Action, Player, Room } from "../../src/objects";
 import { afterTestGroup, beforeTestGroup, init } from "../common";
 
 const { redis, world } = init();
@@ -47,7 +48,7 @@ describe("Action", () => {
 
         it("should fail if the action does not exist", async () => {
             const badAction = Action.imitate(world, "a:invalid");
-            expect(badAction).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(badAction).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 
