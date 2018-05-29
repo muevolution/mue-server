@@ -2,8 +2,8 @@ import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
-import { GameObjectDestroyedError, GameObjectIdDoesNotExist, InvalidGameObjectContainerError } from "../../src/errors";
-import { Action, GameObjectTypes, Player, Room, GameObject } from "../../src/objects";
+import { GameObjectDestroyedError, GameObjectIdDoesNotExist, InvalidGameObjectLocationError, InvalidGameObjectParentError } from "../../src/errors";
+import { Action, GameObject, GameObjectTypes, Player, Room } from "../../src/objects";
 import { afterTestGroup, beforeTestGroup, init } from "../common";
 import { MockGameObject } from "./gameobject.mock";
 
@@ -150,7 +150,7 @@ describe("GameObject", () => {
     describe("#getLocation()", () => {
         it("should match", async () => {
             expect(firstObj).to.exist;
-            expect(rootRoom).to.exist;
+            expect(playerRoom).to.exist;
             expect(await firstObj.getLocation()).to.exist.and.property("id").to.equal(playerRoom.id);
         });
     });
@@ -318,11 +318,13 @@ describe("GameObject", () => {
         let testRoom1: Room;
         let testRoom2: Room;
         let testObj: MockGameObject;
+        let testAction: Action;
 
         before(async () => {
             testRoom1 = await createTestRoom("GameObj.reparent1");
             testRoom2 = await createTestRoom("GameObj.reparent2");
             testObj = await createTestObj("GameObj.reparent", "testid2");
+            testAction = await Action.create(world, "GameObjReparentTest", rootPlayer, rootRoom);
         });
 
         it("should reparent successfully", async () => {
@@ -330,6 +332,11 @@ describe("GameObject", () => {
             expect(actual).to.be.a("object");
             expect(actual).to.have.property("oldParent").and.have.property("_id").equal(rootRoom.shortid);
             expect(actual).to.have.property("newParent").and.have.property("_id").equal(testRoom1.shortid);
+        });
+
+        it("should not reparent to a bad parent type", async () => {
+            const actual = testRoom1.reparent(testAction as any); // Required to skip typescript safety checks
+            await expect(actual).to.be.rejectedWith(InvalidGameObjectParentError);
         });
 
         it("should not reparent to a destroyed object", async () => {
@@ -370,9 +377,9 @@ describe("GameObject", () => {
             expect(actual).to.have.property("newLocation").and.have.property("_id").equal(testRoom1.shortid);
         });
 
-        it("should not move to a non-container", async () => {
+        it("should not move to a bad container type", async () => {
             const actual = firstObj.move(testAction as any); // Required to skip typescript safety checks
-            await expect(actual).to.be.rejectedWith(InvalidGameObjectContainerError);
+            await expect(actual).to.be.rejectedWith(InvalidGameObjectLocationError);
         });
 
         it("should not move to a destroyed object", async () => {

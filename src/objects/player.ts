@@ -60,19 +60,24 @@ export class Player extends GameObject implements Container {
         return super.getLocation() as Promise<PlayerLocations>;
     }
 
-    async move(newLocation: PlayerLocations): Promise<{oldLocation?: GameObject, newLocation: GameObject}> {
-        const result = await super.move(newLocation);
+    reparent(newParent: PlayerParents) {
+        return super._reparent(newParent, [GameObjectTypes.ROOM]);
+    }
+
+    async move(newLocation: PlayerLocations) {
+        const result = await super._move(newLocation, [GameObjectTypes.ROOM, GameObjectTypes.ITEM]);
+        if (!result) {
+            return null;
+        }
 
         // Notify rooms of change
         // TODO: Make sure the current user doesn't the third person join/part messages
-        if (result) {
-            if (result.oldLocation) {
-                await this.world.publishMessage(`${this.name} has left.`, result.oldLocation);
-            }
-
-            await this.sendMessage(`You arrive in ${result.newLocation.name}.`);
-            await this.world.publishMessage(`${this.name} has arrived.`, result.newLocation);
+        if (result.oldLocation) {
+            await this.world.publishMessage(`${this.name} has left.`, result.oldLocation);
         }
+
+        await this.sendMessage(`You arrive in ${result.newLocation.name}.`);
+        await this.world.publishMessage(`${this.name} has arrived.`, result.newLocation);
 
         return result;
     }

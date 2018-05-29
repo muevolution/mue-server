@@ -55,6 +55,12 @@ export class Action extends GameObject<ActionMetaData> {
         return super.getLocation() as Promise<ActionLocations>;
     }
 
+    public reparent(newParent: ActionParents) {
+        // TODO: This should change the owner too
+        // (actually we need a re-owner system and scripts shouldn't be reparentable)
+        return super._reparent(newParent, [GameObjectTypes.PLAYER]);
+    }
+
     get target() {
         return this._meta.target || null;
     }

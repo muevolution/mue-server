@@ -2,7 +2,7 @@ import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
-import { GameObjectIdDoesNotExist } from "../../src/errors";
+import { GameObjectIdDoesNotExist, InvalidGameObjectParentError } from "../../src/errors";
 import { Action, Player, Room } from "../../src/objects";
 import { afterTestGroup, beforeTestGroup, init } from "../common";
 
@@ -30,6 +30,10 @@ describe("Action", () => {
 
     function createTestAction(name?: string): Promise<Action> {
         return Action.create(world, `TestAct${name}`, rootPlayer, playerRoom);
+    }
+
+    function createTestPlayer(name?: string): Promise<Player> {
+        return Player.create(world, `Test player - ${name}`, rootPlayer, rootRoom, playerRoom);
     }
 
     // Actual methods
@@ -63,8 +67,35 @@ describe("Action", () => {
     describe("#getLocation()", () => {
         it("should match", async () => {
             expect(firstAction).to.exist;
-            expect(rootRoom).to.exist;
+            expect(playerRoom).to.exist;
             expect(await firstAction.getLocation()).to.exist.and.property("id").to.equal(playerRoom.id);
+        });
+    });
+
+    describe("#reparent", () => {
+        let testPlayer: Player;
+        let testAction: Action;
+
+        before(async () => {
+            testPlayer = await createTestPlayer("ScriptReparent");
+            testAction = await createTestAction("ActionReparent");
+        });
+
+        it("should reparent successfully", async () => {
+            const actual = await testAction.reparent(testPlayer);
+            expect(actual).to.be.a("object");
+            expect(actual).to.have.property("oldParent").and.have.property("_id").equal(rootPlayer.shortid);
+            expect(actual).to.have.property("newParent").and.have.property("_id").equal(testPlayer.shortid);
+        });
+
+        it("should not reparent to a non-player", async () => {
+            const actual = testAction.reparent(rootRoom as any); // Required to skip typescript safety checks
+            await expect(actual).to.be.rejectedWith(InvalidGameObjectParentError);
+        });
+
+        after(async () => {
+            await testAction.destroy();
+            await testPlayer.destroy();
         });
     });
 

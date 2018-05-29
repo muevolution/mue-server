@@ -55,6 +55,14 @@ export class Room extends GameObject implements Container {
         return super.getLocation() as Promise<RoomLocations>;
     }
 
+    public reparent(newParent: RoomParents) {
+        return super._reparent(newParent, [GameObjectTypes.ROOM]);
+    }
+
+    public move(newLocation: RoomLocations) {
+        return super._move(newLocation, [GameObjectTypes.ROOM]);
+    }
+
     getContents(type?: GameObjectTypes) {
         return GetContents(this.world, this, type);
     }

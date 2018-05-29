@@ -2,7 +2,7 @@ import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
-import { GameObjectIdDoesNotExist } from "../../src/errors";
+import { GameObjectIdDoesNotExist, InvalidGameObjectParentError } from "../../src/errors";
 import { Action, GameObjectTypes, Item, Player, Room } from "../../src/objects";
 import { afterTestGroup, beforeTestGroup, init } from "../common";
 
@@ -63,8 +63,62 @@ describe("Room", () => {
     describe("#getLocation()", () => {
         it("should match", async () => {
             expect(firstRoom).to.exist;
-            expect(rootRoom).to.exist;
+            expect(playerRoom).to.exist;
             expect(await firstRoom.getLocation()).to.exist.and.property("id").to.equal(playerRoom.id);
+        });
+    });
+
+    describe("#reparent", () => {
+        let testRoom1: Room;
+        let testRoom2: Room;
+
+        before(async () => {
+            testRoom1 = await createTestRoom("Room.reparent target");
+            testRoom2 = await createTestRoom("Room.reparent sample");
+        });
+
+        it("should reparent successfully", async () => {
+            const actual = await testRoom1.reparent(testRoom2);
+            expect(actual).to.be.a("object");
+            expect(actual).to.have.property("oldParent").and.have.property("_id").equal(rootRoom.shortid);
+            expect(actual).to.have.property("newParent").and.have.property("_id").equal(testRoom2.shortid);
+        });
+
+        it("should not reparent to a non-room", async () => {
+            const actual = testRoom1.reparent(rootPlayer as any); // Required to skip typescript safety checks
+            await expect(actual).to.be.rejectedWith(InvalidGameObjectParentError);
+        });
+
+        after(async () => {
+            await testRoom1.destroy();
+            await testRoom2.destroy();
+        });
+    });
+
+    describe("#move", () => {
+        let testRoom1: Room;
+        let testRoom2: Room;
+
+        before(async () => {
+            testRoom1 = await createTestRoom("Room.move target");
+            testRoom2 = await createTestRoom("Room.move sample");
+        });
+
+        it("should move successfully", async () => {
+            const actual = await testRoom1.move(testRoom2);
+            expect(actual).to.be.a("object");
+            expect(actual).to.have.property("oldLocation").and.have.property("_id").equal(playerRoom.shortid);
+            expect(actual).to.have.property("newLocation").and.have.property("_id").equal(testRoom2.shortid);
+        });
+
+        it("should not move to a non-room", async () => {
+            const actual = testRoom1.reparent(rootPlayer as any); // Required to skip typescript safety checks
+            await expect(actual).to.be.rejectedWith(InvalidGameObjectParentError);
+        });
+
+        after(async () => {
+            await testRoom1.destroy();
+            await testRoom2.destroy();
         });
     });
 
@@ -189,7 +243,7 @@ describe("Room", () => {
         let item: Item;
 
         before(async () => {
-            testRoom = await createTestRoom("Room.getContents");
+            testRoom = await createTestRoom("Room.destroy");
             item = await Item.create(world, "Ejected Item", rootPlayer, rootRoom, testRoom);
         });
 

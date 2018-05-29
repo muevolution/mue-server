@@ -63,7 +63,7 @@ describe("Item", () => {
     describe("#getLocation()", () => {
         it("should match", async () => {
             expect(firstItem).to.exist;
-            expect(rootRoom).to.exist;
+            expect(playerRoom).to.exist;
             expect(await firstItem.getLocation()).to.exist.and.property("id").to.equal(playerRoom.id);
         });
     });

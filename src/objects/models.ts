@@ -26,6 +26,8 @@ export const ALL_CONTAINER_TYPES: GameObjectTypes[] = [
     GameObjectTypes.ITEM
 ];
 
+export const ALL_PARENT_TYPES = ALL_CONTAINER_TYPES;
+
 export function splitExtendedId(id: string, checkType?: GameObjectTypes): {"id": string, "type"?: GameObjectTypes} {
     if (!id) {
         return null;

@@ -20,9 +20,15 @@ export class GameObjectDestroyedError extends Error {
     }
 }
 
-export class InvalidGameObjectContainerError extends Error {
+export class InvalidGameObjectParentError extends Error {
     constructor(private objectId: string, private type: GameObjectTypes) {
-        super(`Object(${type}) with the ID ${objectId} is not a valid container`);
+        super(`Object(${type}) with the ID ${objectId} is not a valid parent`);
+    }
+}
+
+export class InvalidGameObjectLocationError extends Error {
+    constructor(private objectId: string, private type: GameObjectTypes) {
+        super(`Object(${type}) with the ID ${objectId} is not a valid location for`);
     }
 }
 

@@ -74,6 +74,12 @@ export class Script extends GameObject {
         return super.getLocation() as Promise<ScriptLocations>;
     }
 
+    public reparent(newParent: ScriptParents) {
+        // TODO: This should change the owner too
+        // (actually we need a re-owner system and scripts shouldn't be reparentable)
+        return super._reparent(newParent, [GameObjectTypes.PLAYER]);
+    }
+
     public get compiled() {
         return this._compiled;
     }
