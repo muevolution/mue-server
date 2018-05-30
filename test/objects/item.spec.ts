@@ -47,8 +47,8 @@ describe("Item", () => {
         xit("should fetch an existing item from hot cache", () => { return; });
 
         it("should fail if the item does not exist", async () => {
-            const badItem = Item.imitate(world, "i:invalid");
-            await expect(badItem).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            const actual = Item.imitate(world, "i:invalid");
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 
@@ -192,7 +192,7 @@ describe("Item", () => {
             item = await Item.create(world, "Ejected Item", rootPlayer, rootRoom, testItem);
         });
 
-        it("should destroy a room and eject its contents", async () => {
+        it("should destroy an item and eject its contents", async () => {
             expect(item.location).to.equal(testItem.id, "Item did not start in expected location");
 
             // Destroy the room

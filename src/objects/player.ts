@@ -111,7 +111,7 @@ export class Player extends GameObject implements Container {
                 return null;
             }
 
-            return location.find(term, type);
+            return location.findIn(term, type);
         }
 
         return null;
@@ -133,7 +133,7 @@ export class Player extends GameObject implements Container {
         }
 
         // Test general item names
-        const inv = _.find(contents, (c) => c.type === type && c.matchName(term));
+        const inv = _.find(contents, (c) => (!type || c.type === type) && c.matchName(term));
         if (inv) {
             return inv;
         }
@@ -163,9 +163,14 @@ export class Player extends GameObject implements Container {
 
         if (absolute) {
             // Try direct addressing first
-            const targetObj = await this.world.getObjectById(target);
-            if (targetObj) {
-                return targetObj;
+            try {
+                const targetObj = await this.world.getObjectById(target);
+                if (targetObj) {
+                    return targetObj;
+                }
+            } catch {
+                // Swallow
+                // TODO: See if there's a better way to do this as a 'test' without throwing an exception
             }
 
             const targetPlayer = await this.world.getPlayerByName(target);

@@ -11,7 +11,7 @@ const { redis, world } = init();
 chai.use(chaiSubset);
 chai.use(chaiAsPromised);
 
-describe("Room", () => {
+describe("Script", () => {
     let rootPlayer: Player;
     let rootRoom: Room;
     let playerRoom: Room;
@@ -51,8 +51,8 @@ describe("Room", () => {
         xit("should fetch an existing script from hot cache", () => { return; });
 
         it("should fail if the script does not exist", async () => {
-            const badScript = Script.imitate(world, "s:invalid");
-            await expect(badScript).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            const actual = Script.imitate(world, "s:invalid");
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 
@@ -74,7 +74,7 @@ describe("Room", () => {
         });
     });
 
-    describe("#reparent", () => {
+    describe("#reparent()", () => {
         let testPlayer: Player;
         let testScript: Script;
 
@@ -114,7 +114,7 @@ describe("Room", () => {
             expect(actual).to.not.exist;
         });
 
-        it("#updateCode should update the set code", () => {
+        it("#updateCode() should update the set code", () => {
             const setActual = testScript.updateCode(testCode);
             expect(setActual).to.be.fulfilled;
 

@@ -47,8 +47,8 @@ describe("Room", () => {
         xit("should fetch an existing room from hot cache", () => { return; });
 
         it("should fail if the room does not exist", async () => {
-            const badRoom = Room.imitate(world, "r:invalid");
-            await expect(badRoom).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            const actual = Room.imitate(world, "r:invalid");
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 
@@ -68,7 +68,7 @@ describe("Room", () => {
         });
     });
 
-    describe("#reparent", () => {
+    describe("#reparent()", () => {
         let testRoom1: Room;
         let testRoom2: Room;
 
@@ -95,7 +95,7 @@ describe("Room", () => {
         });
     });
 
-    describe("#move", () => {
+    describe("#move()", () => {
         let testRoom1: Room;
         let testRoom2: Room;
 

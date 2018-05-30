@@ -51,8 +51,8 @@ describe("Action", () => {
         xit("should fetch an existing action from hot cache", () => { return; });
 
         it("should fail if the action does not exist", async () => {
-            const badAction = Action.imitate(world, "a:invalid");
-            await expect(badAction).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            const actual = Action.imitate(world, "a:invalid");
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
     });
 

@@ -162,17 +162,17 @@ describe("GameObject", () => {
             testObj = await createTestObj("GameObj.properties", "testid2");
         });
 
-        it("#getProp should get nothing at start", async () => {
+        it("#getProp() should get nothing at start", async () => {
             const actual = await testObj.getProp("testpath");
             expect(actual).to.be.null;
         });
 
-        it("#getProps should get nothing at start", async () => {
+        it("#getProps() should get nothing at start", async () => {
             const actual = await testObj.getProps();
             expect(actual).to.be.a("object").and.deep.equal({});
         });
 
-        it("#setProp and #getProp should handle string properties", async () => {
+        it("#setProp() and #getProp() should handle string properties", async () => {
             const setActual = await testObj.setProp("teststrprop", "teststr");
             expect(setActual).to.be.true;
 
@@ -180,7 +180,7 @@ describe("GameObject", () => {
             expect(getActual).to.be.a("string").and.equal("teststr");
         });
 
-        it("#setProp and #getProp should handle number properties", async () => {
+        it("#setProp() and #getProp() should handle number properties", async () => {
             const setActual = await testObj.setProp("testnumprop", 2299);
             expect(setActual).to.be.true;
 
@@ -188,7 +188,7 @@ describe("GameObject", () => {
             expect(getActual).to.be.a("number").and.equal(2299);
         });
 
-        it("#setProp and #getProp should handle array properties", async () => {
+        it("#setProp() and #getProp() should handle array properties", async () => {
             const setActual = await testObj.setProp("testarrprop", ["a", 123]);
             expect(setActual).to.be.true;
 
@@ -196,7 +196,7 @@ describe("GameObject", () => {
             expect(getActual).to.be.an("array").and.deep.equal(["a", 123]);
         });
 
-        it("#setProp should unset a property", async () => {
+        it("#setProp() should unset a property", async () => {
             const setActual = await testObj.setProp("testempty", "a");
             expect(setActual).to.be.true;
 
@@ -207,7 +207,7 @@ describe("GameObject", () => {
             expect(getActual).to.be.null;
         });
 
-        it("#getProps should fetch all set values", async () => {
+        it("#getProps() should fetch all set values", async () => {
             const actual = await testObj.getProps();
             expect(actual).to.be.an("object").and.deep.equal({
                 "teststrprop": "teststr",
@@ -216,7 +216,7 @@ describe("GameObject", () => {
             });
         });
 
-        it("#setProps should set multiple properties", async () => {
+        it("#setProps() should set multiple properties", async () => {
             const setActual = await testObj.setProps({
                 "teststrprop": 361666,
                 "newprop": "newval",
@@ -239,7 +239,7 @@ describe("GameObject", () => {
         });
     });
 
-    describe("#matchName", () => {
+    describe("#matchName()", () => {
         it("should match successfully", () => {
             const actual = firstObj.matchName("test object - gameObj.create");
             expect(actual).to.be.true;
@@ -267,7 +267,7 @@ describe("GameObject", () => {
         });
     });
 
-    describe("#rename", () => {
+    describe("#rename()", () => {
         let testObj: MockGameObject;
 
         before(async () => {
@@ -314,7 +314,7 @@ describe("GameObject", () => {
         });
     });
 
-    describe("#reparent", () => {
+    describe("#reparent()", () => {
         let testRoom1: Room;
         let testRoom2: Room;
         let testObj: MockGameObject;
@@ -357,7 +357,7 @@ describe("GameObject", () => {
         });
     });
 
-    describe("#move", () => {
+    describe("#move()", () => {
         let testRoom1: Room;
         let testRoom2: Room;
         let testObj: MockGameObject;
@@ -424,7 +424,7 @@ describe("GameObject", () => {
         });
     });
 
-    describe("#toString", () => {
+    describe("#toString()", () => {
         let testObj: MockGameObject;
 
         before(async () => {
