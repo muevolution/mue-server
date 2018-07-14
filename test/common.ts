@@ -1,6 +1,7 @@
 import { initLogger } from "../src/logging";
-import { Player, Room, RootFields, World } from "../src/objects";
+import { Action, Item, Player, Room, RootFields, Script, World } from "../src/objects";
 import { RedisConnection } from "../src/redis";
+import { MockGameObject } from "./objects/gameobject.mock";
 
 export function init() {
     initLogger();
@@ -35,4 +36,46 @@ export async function beforeTestGroup(redis: RedisConnection, world: World) {
 export async function afterTestGroup(world: World) {
     // Shut down the world connection
     await world.shutdown();
+}
+
+export function objectCreator(world: World, rootRoom: Room, rootPlayer: Player, playerRoom: Room) {
+    function createTestAction(name?: string): Promise<Action> {
+        return Action.create(world, `TestAct${name}`, rootPlayer, playerRoom);
+    }
+
+    function createTestPlayer(name?: string): Promise<Player> {
+        return Player.create(world, `Test player - ${name}`, rootPlayer, rootRoom, playerRoom);
+    }
+
+    function createTestItem(name?: string): Promise<Item> {
+        return Item.create(world, `Test item - ${name}`, rootPlayer, rootRoom, playerRoom);
+    }
+
+    function createTestRoom(name?: string): Promise<Room> {
+        return Room.create(world, `Test room - ${name}`, rootPlayer, rootRoom, playerRoom);
+    }
+
+    function createTestScript(name?: string): Promise<Script> {
+        return Script.create(world, `Test script - ${name}`, rootPlayer, playerRoom);
+    }
+
+    async function createTestObj(name?: string, id?: string): Promise<MockGameObject> {
+        const mgo = new MockGameObject(world, {
+            "name": `Test Object - ${name}`,
+            "creator": rootPlayer.id,
+            "location": playerRoom.id,
+            "parent": rootRoom.id,
+        }, id);
+        await world.storage.addObject(mgo);
+        return mgo;
+    }
+
+    return {
+        createTestAction,
+        createTestPlayer,
+        createTestItem,
+        createTestObj,
+        createTestRoom,
+        createTestScript
+    };
 }

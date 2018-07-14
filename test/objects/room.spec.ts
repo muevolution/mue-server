@@ -4,7 +4,7 @@ import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist, InvalidGameObjectParentError } from "../../src/errors";
 import { Action, GameObjectTypes, Item, Player, Room } from "../../src/objects";
-import { afterTestGroup, beforeTestGroup, init } from "../common";
+import { afterTestGroup, beforeTestGroup, init, objectCreator } from "../common";
 
 const { redis, world } = init();
 
@@ -16,6 +16,7 @@ describe("Room", () => {
     let rootRoom: Room;
     let playerRoom: Room;
     let firstRoom: Room;
+    const creator = () => objectCreator(world, rootRoom, rootPlayer, playerRoom);
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
@@ -28,15 +29,11 @@ describe("Room", () => {
         await afterTestGroup(world);
     });
 
-    function createTestRoom(name?: string): Promise<Room> {
-        return Room.create(world, `Test room - ${name}`, rootPlayer, rootRoom, playerRoom);
-    }
-
     // Actual methods
 
     describe(".create()", () => {
         it("should create successfully", async () => {
-            firstRoom = await createTestRoom("Room.create");
+            firstRoom = await creator().createTestRoom("Room.create");
             expect(firstRoom).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
         });
     });
@@ -73,8 +70,8 @@ describe("Room", () => {
         let testRoom2: Room;
 
         before(async () => {
-            testRoom1 = await createTestRoom("Room.reparent target");
-            testRoom2 = await createTestRoom("Room.reparent sample");
+            testRoom1 = await creator().createTestRoom("Room.reparent target");
+            testRoom2 = await creator().createTestRoom("Room.reparent sample");
         });
 
         it("should reparent successfully", async () => {
@@ -100,8 +97,8 @@ describe("Room", () => {
         let testRoom2: Room;
 
         before(async () => {
-            testRoom1 = await createTestRoom("Room.move target");
-            testRoom2 = await createTestRoom("Room.move sample");
+            testRoom1 = await creator().createTestRoom("Room.move target");
+            testRoom2 = await creator().createTestRoom("Room.move sample");
         });
 
         it("should move successfully", async () => {
@@ -127,7 +124,7 @@ describe("Room", () => {
         let item: Item;
 
         before(async () => {
-            testRoom = await createTestRoom("Room.getContents");
+            testRoom = await creator().createTestRoom("Room.getContents");
         });
 
         it("should start empty", async () => {
@@ -162,7 +159,7 @@ describe("Room", () => {
         let testRoom: Room;
 
         before(async () => {
-            testRoom = await createTestRoom("Room.find");
+            testRoom = await creator().createTestRoom("Room.find");
         });
 
         describe("items", () => {
@@ -243,7 +240,7 @@ describe("Room", () => {
         let item: Item;
 
         before(async () => {
-            testRoom = await createTestRoom("Room.destroy");
+            testRoom = await creator().createTestRoom("Room.destroy");
             item = await Item.create(world, "Ejected Item", rootPlayer, rootRoom, testRoom);
         });
 

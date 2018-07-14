@@ -4,7 +4,7 @@ import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist } from "../../src/errors";
 import { Action, GameObjectTypes, Item, Player, Room } from "../../src/objects";
-import { afterTestGroup, beforeTestGroup, init } from "../common";
+import { afterTestGroup, beforeTestGroup, init, objectCreator } from "../common";
 
 const { redis, world } = init();
 
@@ -16,6 +16,7 @@ describe("Item", () => {
     let rootRoom: Room;
     let playerRoom: Room;
     let firstItem: Item;
+    const creator = () => objectCreator(world, rootRoom, rootPlayer, playerRoom);
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
@@ -28,15 +29,11 @@ describe("Item", () => {
         await afterTestGroup(world);
     });
 
-    function createTestItem(name?: string): Promise<Item> {
-        return Item.create(world, `Test item - ${name}`, rootPlayer, rootRoom, playerRoom);
-    }
-
     // Actual methods
 
     describe(".create()", () => {
         it("should create successfully", async () => {
-            firstItem = await createTestItem("Item.create");
+            firstItem = await creator().createTestItem("Item.create");
             expect(firstItem).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
         });
     });
@@ -73,7 +70,7 @@ describe("Item", () => {
         let item: Item;
 
         before(async () => {
-            testItem = await createTestItem("Item.getContents");
+            testItem = await creator().createTestItem("Item.getContents");
         });
 
         it("should start empty", async () => {
@@ -108,7 +105,7 @@ describe("Item", () => {
         let testItem: Item;
 
         before(async () => {
-            testItem = await createTestItem("Item.find");
+            testItem = await creator().createTestItem("Item.find");
         });
 
         describe("items", () => {
@@ -188,7 +185,7 @@ describe("Item", () => {
         let item: Item;
 
         before(async () => {
-            testItem = await createTestItem("Item.getContents");
+            testItem = await creator().createTestItem("Item.getContents");
             item = await Item.create(world, "Ejected Item", rootPlayer, rootRoom, testItem);
         });
 

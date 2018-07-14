@@ -4,7 +4,7 @@ import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist, InvalidGameObjectParentError } from "../../src/errors";
 import { Player, Room, Script } from "../../src/objects";
-import { afterTestGroup, beforeTestGroup, init } from "../common";
+import { afterTestGroup, beforeTestGroup, init, objectCreator } from "../common";
 
 const { redis, world } = init();
 
@@ -16,6 +16,7 @@ describe("Script", () => {
     let rootRoom: Room;
     let playerRoom: Room;
     let firstScript: Script;
+    const creator = () => objectCreator(world, rootRoom, rootPlayer, playerRoom);
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
@@ -28,19 +29,11 @@ describe("Script", () => {
         await afterTestGroup(world);
     });
 
-    function createTestScript(name?: string): Promise<Script> {
-        return Script.create(world, `Test script - ${name}`, rootPlayer, playerRoom);
-    }
-
-    function createTestPlayer(name?: string): Promise<Player> {
-        return Player.create(world, `Test player - ${name}`, rootPlayer, rootRoom, playerRoom);
-    }
-
     // Actual methods
 
     describe(".create()", () => {
         it("should create successfully", async () => {
-            firstScript = await createTestScript("Script.create");
+            firstScript = await creator().createTestScript("Script.create");
             expect(firstScript).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
         });
     });
@@ -79,8 +72,8 @@ describe("Script", () => {
         let testScript: Script;
 
         before(async () => {
-            testPlayer = await createTestPlayer("ScriptReparent");
-            testScript = await createTestScript("Script.reparent");
+            testPlayer = await creator().createTestPlayer("ScriptReparent");
+            testScript = await creator().createTestScript("Script.reparent");
         });
 
         it("should reparent successfully", async () => {
@@ -106,7 +99,7 @@ describe("Script", () => {
         let testScript: Script;
 
         before(async () => {
-            testScript = await createTestScript("Script.scripting");
+            testScript = await creator().createTestScript("Script.scripting");
         });
 
         it("#compiled should start empty", () => {

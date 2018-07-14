@@ -51,6 +51,7 @@ export interface AsyncRedisClient extends redis.RedisClient {
     unsubscribeAsync(channel: string | string[]): Promise<string>;
     publishAsync(channel: string, value: string): Promise<number>;
 
+    monitorAsync(): Promise<"OK">;
     quitAsync(): Promise<"OK">;
     flushdbAsync(): Promise<string>;
 }

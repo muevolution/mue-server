@@ -54,6 +54,10 @@ export class Storage {
     constructor(private client: AsyncRedisClient) {
     }
 
+    get [Symbol.toStringTag]() {
+        return "Storage";
+    }
+
     async addObject(object: GameObject) {
         // TODO: Handle the ID being in use
         const multi = this.client.multi();

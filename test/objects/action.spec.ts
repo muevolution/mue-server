@@ -4,7 +4,7 @@ import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist, InvalidGameObjectParentError } from "../../src/errors";
 import { Action, Player, Room } from "../../src/objects";
-import { afterTestGroup, beforeTestGroup, init } from "../common";
+import { afterTestGroup, beforeTestGroup, init, objectCreator } from "../common";
 
 const { redis, world } = init();
 
@@ -16,6 +16,7 @@ describe("Action", () => {
     let rootRoom: Room;
     let playerRoom: Room;
     let firstAction: Action;
+    const creator = () => objectCreator(world, rootRoom, rootPlayer, playerRoom);
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
@@ -28,19 +29,11 @@ describe("Action", () => {
         await afterTestGroup(world);
     });
 
-    function createTestAction(name?: string): Promise<Action> {
-        return Action.create(world, `TestAct${name}`, rootPlayer, playerRoom);
-    }
-
-    function createTestPlayer(name?: string): Promise<Player> {
-        return Player.create(world, `Test player - ${name}`, rootPlayer, rootRoom, playerRoom);
-    }
-
     // Actual methods
 
     describe(".create()", () => {
         it("should create successfully", async () => {
-            firstAction = await createTestAction("ActionCreate");
+            firstAction = await creator().createTestAction("ActionCreate");
             expect(firstAction).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
         });
     });
@@ -77,8 +70,8 @@ describe("Action", () => {
         let testAction: Action;
 
         before(async () => {
-            testPlayer = await createTestPlayer("ScriptReparent");
-            testAction = await createTestAction("ActionReparent");
+            testPlayer = await creator().createTestPlayer("ScriptReparent");
+            testAction = await creator().createTestAction("ActionReparent");
         });
 
         it("should reparent successfully", async () => {
@@ -128,8 +121,8 @@ describe("Action", () => {
         let multiAction: Action;
 
         before(async () => {
-            singleAction = await createTestAction("Single");
-            multiAction = await createTestAction("Multi;Double;Triple");
+            singleAction = await creator().createTestAction("Single");
+            multiAction = await creator().createTestAction("Multi;Double;Triple");
         });
 
         it("should not match an empty command", () => {

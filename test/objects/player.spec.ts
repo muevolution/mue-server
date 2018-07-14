@@ -4,7 +4,7 @@ import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist, InvalidGameObjectParentError } from "../../src/errors";
 import { Action, GameObjectTypes, Item, Player, Room } from "../../src/objects";
-import { afterTestGroup, beforeTestGroup, init } from "../common";
+import { afterTestGroup, beforeTestGroup, init, objectCreator } from "../common";
 
 const { redis, world } = init();
 
@@ -16,6 +16,7 @@ describe("Player", () => {
     let rootRoom: Room;
     let playerRoom: Room;
     let firstPlayer: Player;
+    const creator = () => objectCreator(world, rootRoom, rootPlayer, playerRoom);
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
@@ -30,10 +31,6 @@ describe("Player", () => {
 
     function createTestPlayer(name?: string): Promise<Player> {
         return Player.create(world, `TestPlayer${name}`, rootPlayer, rootRoom, playerRoom);
-    }
-
-    function createTestRoom(name?: string): Promise<Room> {
-        return Room.create(world, `Test room - ${name}`, rootPlayer, rootRoom, playerRoom);
     }
 
     // Actual methods
@@ -78,7 +75,7 @@ describe("Player", () => {
 
         before(async () => {
             testPlayer = await createTestPlayer("PlayerReparentTarget");
-            testRoom2 = await createTestRoom("Player.reparent sample");
+            testRoom2 = await creator().createTestRoom("Player.reparent sample");
         });
 
         it("should reparent successfully", async () => {
@@ -105,7 +102,7 @@ describe("Player", () => {
 
         before(async () => {
             testPlayer = await createTestPlayer("PlayerMoveTarget");
-            testRoom2 = await createTestRoom("Player.move sample");
+            testRoom2 = await creator().createTestRoom("Player.move sample");
         });
 
         it("should move successfully", async () => {

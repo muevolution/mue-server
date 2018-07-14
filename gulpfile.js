@@ -33,7 +33,7 @@ function getS3path(pathname) {
 
 gulp.task("test:clean", () => {
     return del(["coverage", "mochawesome-report"]);
-})
+});
 
 gulp.task("test", shell.task("nyc mocha", {"env": {"NODE_ENV": "test"}}));
 

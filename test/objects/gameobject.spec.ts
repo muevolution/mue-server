@@ -4,7 +4,7 @@ import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectDestroyedError, GameObjectIdDoesNotExist, InvalidGameObjectLocationError, InvalidGameObjectParentError } from "../../src/errors";
 import { Action, GameObject, GameObjectTypes, Player, Room } from "../../src/objects";
-import { afterTestGroup, beforeTestGroup, init } from "../common";
+import { afterTestGroup, beforeTestGroup, init, objectCreator } from "../common";
 import { MockGameObject } from "./gameobject.mock";
 
 const { redis, world } = init();
@@ -17,6 +17,7 @@ describe("GameObject", () => {
     let rootRoom: Room;
     let playerRoom: Room;
     let firstObj: MockGameObject;
+    const creator = () => objectCreator(world, rootRoom, rootPlayer, playerRoom);
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
@@ -29,28 +30,13 @@ describe("GameObject", () => {
         await afterTestGroup(world);
     });
 
-    async function createTestObj(name?: string, id?: string): Promise<MockGameObject> {
-        const mgo = new MockGameObject(world, {
-            "name": `Test Object - ${name}`,
-            "creator": rootPlayer.id,
-            "location": playerRoom.id,
-            "parent": rootRoom.id,
-        }, id);
-        await world.storage.addObject(mgo);
-        return mgo;
-    }
-
-    function createTestRoom(name?: string): Promise<Room> {
-        return Room.create(world, `Test room - ${name}`, rootPlayer, rootRoom, playerRoom);
-    }
-
     // Actual methods
 
     describe(".checkType()", () => {
         let testObj: MockGameObject;
 
         before(async () => {
-            testObj = await createTestObj("GameObj.properties");
+            testObj = await creator().createTestObj("GameObj.properties");
         });
 
         it("should correctly match types by instance", () => {
@@ -95,7 +81,7 @@ describe("GameObject", () => {
 
     describe(".constructor()", () => {
         it("should create successfully", async () => {
-            firstObj = await createTestObj("GameObj.create", "testid1");
+            firstObj = await creator().createTestObj("GameObj.create", "testid1");
             expect(firstObj).to.exist;
         });
     });
@@ -159,7 +145,7 @@ describe("GameObject", () => {
         let testObj: MockGameObject;
 
         before(async () => {
-            testObj = await createTestObj("GameObj.properties", "testid2");
+            testObj = await creator().createTestObj("GameObj.properties", "testid2");
         });
 
         it("#getProp() should get nothing at start", async () => {
@@ -271,7 +257,7 @@ describe("GameObject", () => {
         let testObj: MockGameObject;
 
         before(async () => {
-            testObj = await createTestObj("GameObj.rename", "testid2");
+            testObj = await creator().createTestObj("GameObj.rename", "testid2");
         });
 
         it("should rename successfully", async () => {
@@ -321,9 +307,9 @@ describe("GameObject", () => {
         let testAction: Action;
 
         before(async () => {
-            testRoom1 = await createTestRoom("GameObj.reparent1");
-            testRoom2 = await createTestRoom("GameObj.reparent2");
-            testObj = await createTestObj("GameObj.reparent", "testid2");
+            testRoom1 = await creator().createTestRoom("GameObj.reparent1");
+            testRoom2 = await creator().createTestRoom("GameObj.reparent2");
+            testObj = await creator().createTestObj("GameObj.reparent", "testid2");
             testAction = await Action.create(world, "GameObjReparentTest", rootPlayer, rootRoom);
         });
 
@@ -364,9 +350,9 @@ describe("GameObject", () => {
         let testAction: Action;
 
         before(async () => {
-            testRoom1 = await createTestRoom("GameObj.reparent1");
-            testRoom2 = await createTestRoom("GameObj.reparent2");
-            testObj = await createTestObj("GameObj.move", "testid2");
+            testRoom1 = await creator().createTestRoom("GameObj.reparent1");
+            testRoom2 = await creator().createTestRoom("GameObj.reparent2");
+            testObj = await creator().createTestObj("GameObj.move", "testid2");
             testAction = await Action.create(world, "Test Action", rootPlayer, playerRoom);
         });
 
@@ -405,7 +391,7 @@ describe("GameObject", () => {
         let testObj: MockGameObject;
 
         before(async () => {
-            testObj = await createTestObj("GameObj.destroy");
+            testObj = await creator().createTestObj("GameObj.destroy");
         });
 
         it("should destroy an object", async () => {
@@ -428,7 +414,7 @@ describe("GameObject", () => {
         let testObj: MockGameObject;
 
         before(async () => {
-            testObj = await createTestObj("GameObj.toString", "testid2");
+            testObj = await creator().createTestObj("GameObj.toString", "testid2");
         });
 
         it("should match", () => {

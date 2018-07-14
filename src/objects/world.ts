@@ -23,6 +23,14 @@ export class World {
     }) {
     }
 
+    get [Symbol.toStringTag]() {
+        return "World";
+    }
+
+    get redis() {
+        return this.opts.redisConnection;
+    }
+
     public async init(): Promise<void> {
         Logger.info(`ISC> Joining cluster with ${await this.getActiveServers()} active servers`);
         await this.configureInterServer();
