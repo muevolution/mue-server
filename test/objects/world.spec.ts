@@ -3,8 +3,10 @@ import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { initLogger, Logger } from "../../src/logging";
-import { Item, World } from "../../src/objects";
+import { InteriorMessage } from "../../src/netmodels";
 import { RedisConnection } from "../../src/redis";
+import { beforeTestGroup, objectCreator } from "../common";
+import { MockWorld } from "./world.mock";
 
 initLogger();
 
@@ -17,37 +19,43 @@ type MonitorExpectation = string | MonitorExpectFunc;
 describe("World", function() {
     this.timeout(10000);
 
-    async function createWorld(): Promise<World> {
+    async function createWorld(): Promise<MockWorld> {
         const redis = RedisConnection.connect();
 
-        // Enable monitor mode for these tests
-        await redis.client.monitorAsync();
-
-        return new World({ "redisConnection": redis });
+        return new MockWorld({ "redisConnection": redis });
     }
 
-    async function createWorldAndInit(): Promise<World> {
+    async function createWorldAndInit(): Promise<MockWorld> {
         const world = await createWorld();
         await world.init();
         return world;
     }
 
-    function createMonitor(world: World, expected: MonitorExpectation) {
-        return new Promise<void>((resolve, reject) => {
-            const listener = (time: string, args: string[], raw_reply: string) => {
-                Logger.debug("Redis Monitor", time, args, raw_reply);
-                if (
-                    (typeof expected === "string" && raw_reply.indexOf(expected) > -1) ||
-                    (typeof expected === "function" && expected(args, raw_reply))
-                ) {
-                    Logger.debug(`Matched [${expected}] for [${args}]`);
-                    resolve();
-                    world.redis.client.removeListener("monitor", listener);
-                }
-            };
+    async function createMonitor(world: MockWorld, expected: MonitorExpectation) {
+        // Enable monitor mode for these tests
+        const result = await world.redis.client.monitorAsync();
+        if (result !== "OK") {
+            throw new Error("Unable to create monitor: " + result);
+        }
 
-            world.redis.client.on("monitor", listener);
-        });
+        return {
+            "monitor": new Promise<string[]>((resolve, reject) => {
+                Logger.debug("createMonitor", expected);
+                const listener = (time: string, args: string[], raw_reply: string) => {
+                    Logger.debug("Redis Monitor", time, args, raw_reply);
+                    if (
+                        (typeof expected === "string" && raw_reply.indexOf(expected) > -1) ||
+                        (typeof expected === "function" && expected(args, raw_reply))
+                    ) {
+                        Logger.debug(`Matched [${expected}] for [${args}]`);
+                        resolve(args);
+                        world.redis.client.removeListener("monitor", listener);
+                    }
+                };
+
+                world.redis.client.on("monitor", listener);
+            })
+        };
     }
 
     function createEndPromise(redis: RedisConnection) {
@@ -56,6 +64,12 @@ describe("World", function() {
                 resolve();
             });
         });
+    }
+
+    async function makeCreator(world: MockWorld) {
+        const { rootPlayer, rootRoom, playerRoom } = await beforeTestGroup(world.redis, world);
+        const creator = () => objectCreator(world, rootRoom, rootPlayer, playerRoom);
+        return creator;
     }
 
     before(async () => {
@@ -94,10 +108,13 @@ describe("World", function() {
             expect(world).to.have.property("storage").and.be.a("Storage");
             await world.shutdown();
         });
+
+        xit("should fail if server has not been initialized", () => {});
+        xit("should fail if server has been shut down", () => {});
     });
 
     describe("#publishMessage", () => {
-        let world: World;
+        let world: MockWorld;
 
         beforeEach(async () => {
             world = await createWorldAndInit();
@@ -108,25 +125,55 @@ describe("World", function() {
         });
 
         it("should publish a plain message to the world", async () => {
-            const p = createMonitor(world, "Hello world");
+            const { monitor } = await createMonitor(world, "Hello world");
 
             const actual = world.publishMessage("Hello world");
             await expect(actual).to.eventually.be.true;
-            await expect(p).to.fulfilled;
+            await expect(monitor).to.fulfilled;
         });
 
-        xit("should publish a plain message to a target", async () => {
-            const item = await Item.create(world, "test", null, null);
-            const p = createMonitor(world, "Hello item");
+        it("should publish a plain message to a target", async () => {
+            const creator = await makeCreator(world);
+            const item = await creator().createTestItem("TestyItem");
+            const { monitor } = await createMonitor(world, "Hello item");
 
             const actual = world.publishMessage("Hello item", item);
             await expect(actual).to.eventually.be.true;
-            await expect(p).to.fulfilled;
+            await expect(monitor).to.fulfilled;
         });
 
-        xit("should publish an interior message to the world", () => {});
+        it("should publish an interior message to the world", async () => {
+            const { monitor } = await createMonitor(world, "Hello interior");
 
-        xit("should publish an interior message to a target", () => {});
+            const actual = world.publishMessage({
+                "message": "Hello interior",
+                "meta": {
+                    "a": "b",
+                    "c": 2
+                }
+            } as InteriorMessage);
+            await expect(actual).to.eventually.be.true;
+            await expect(monitor).to.fulfilled;
+        });
+
+        it("should publish an interior message to a target", async () => {
+            const creator = await makeCreator(world);
+            const item = await creator().createTestItem("TestyItem");
+            const { monitor } = await createMonitor(world, "Hello interior item");
+
+            const actual = world.publishMessage({
+                "message": "Hello interior item",
+                "meta": {
+                    "a": "b",
+                    "c": 2
+                }
+            } as InteriorMessage, item);
+            await expect(actual).to.eventually.be.true;
+            await expect(monitor).to.fulfilled;
+        });
+
+        xit("should fail if server has not been initialized", () => {});
+        xit("should fail if server has been shut down", () => {});
     });
 
     xdescribe("#command", () => {});

@@ -2,6 +2,7 @@ import * as _ from "lodash";
 
 import { CommandRequest } from "../../client_types";
 import { CommandProcessor } from "../commandproc";
+import { generateId } from "../common";
 import { Logger } from "../logging";
 import { InteriorMessage } from "../netmodels";
 import { AsyncRedisClient, RedisConnection } from "../redis";
@@ -15,37 +16,51 @@ import { Room } from "./room";
 import { Script } from "./script";
 
 export class World {
-    private cmdproc = new CommandProcessor(this);
-    private isc: AsyncRedisClient;
+    protected hasInit: boolean = false;
+    protected hasShutdown: boolean = false;
+    protected worldInstanceId: string;
+    protected cmdproc = new CommandProcessor(this);
+    protected isc: AsyncRedisClient;
 
-    constructor(private opts: {
+    constructor(protected opts: {
         redisConnection: RedisConnection
     }) {
+        this.worldInstanceId = generateId();
     }
 
     get [Symbol.toStringTag]() {
         return "World";
     }
 
-    get redis() {
-        return this.opts.redisConnection;
-    }
-
     public async init(): Promise<void> {
-        Logger.info(`ISC> Joining cluster with ${await this.getActiveServers()} active servers`);
+        if (this.hasInit) {
+            return;
+        }
+
+        this.hasInit = true;
+        Logger.info(`ISC> [${this.worldInstanceId}] Joining cluster with ${await this.getActiveServers()} active servers`);
         await this.configureInterServer();
     }
 
     public async shutdown(): Promise<void> {
+        if (!this.hasInit || this.hasShutdown) {
+            return;
+        }
+
+        this.hasShutdown = true;
+        Logger.info(`World ${this.worldInstanceId} shutting down server upon request`);
         await this.isc.quitAsync();
         await this.opts.redisConnection.client.quitAsync();
     }
 
     public get storage(): Storage {
+        this.stateEnforce();
         return new Storage(this.opts.redisConnection.client);
     }
 
     public async publishMessage(message: InteriorMessage | string, target?: GameObject, meta?: {}): Promise<boolean> {
+        this.stateEnforce();
+
         let channel;
         if (target) {
             let targetId = target.id;
@@ -70,19 +85,24 @@ export class World {
             return false;
         }
 
+        Logger.debug(`World ${this.worldInstanceId} publishing message to [${channel}]`, outboundMessage);
         await this.opts.redisConnection.client.publishAsync(channel, JSON.stringify(outboundMessage));
         return true;
     }
 
     public command(player: Player, command: CommandRequest): Promise<boolean> {
+        this.stateEnforce();
         return this.cmdproc.process(player, command);
     }
 
     public getPlayerById(id: string): Promise<Player> {
+        this.stateEnforce();
         return Player.imitate(this, id);
     }
 
     public async getPlayerByName(name: string): Promise<Player> {
+        this.stateEnforce();
+
         const playerId = await this.storage.findPlayerByName(name);
         if (!playerId) {
             return null;
@@ -92,10 +112,13 @@ export class World {
     }
 
     public getRoomById(id: string): Promise<Room> {
+        this.stateEnforce();
         return Room.imitate(this, id);
     }
 
     public async getRootRoom(): Promise<Room> {
+        this.stateEnforce();
+
         const rootRoomId = await this.storage.getRootValue(RootFields.ROOT_ROOM);
         if (!rootRoomId) {
             throw new Error("Unable to find root room.");
@@ -105,14 +128,17 @@ export class World {
     }
 
     public getItemById(id: string): Promise<Item> {
+        this.stateEnforce();
         return Item.imitate(this, id);
     }
 
     public getScriptById(id: string): Promise<Script> {
+        this.stateEnforce();
         return Script.imitate(this, id);
     }
 
     public getActionById(id: string): Promise<Action> {
+        this.stateEnforce();
         return Action.imitate(this, id);
     }
 
@@ -153,21 +179,29 @@ export class World {
     }
 
     public async getActiveServers(): Promise<number> {
+        this.stateEnforce();
+
         const worlds = await this.opts.redisConnection.numsub("c:isc");
         return worlds["c:isc"];
     }
 
     public async getActiveRoomIds(): Promise<string[]> {
+        this.stateEnforce();
+
         const rooms = await this.opts.redisConnection.client.pubsubAsync("channels", "c:r:*");
         return _.map(rooms, (ch) => ch.substring(2));
     }
 
     public async getConnectedPlayerIds(): Promise<string[]> {
+        this.stateEnforce();
+
         const players = await this.opts.redisConnection.client.pubsubAsync("channels", "c:p:*");
         return _.map(players, (ch) => ch.substring(2));
     }
 
     public async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
+        this.stateEnforce();
+
         const rootRoom = await this.getRootRoom();
         return rootRoom.find(term, type);
     }
@@ -177,23 +211,32 @@ export class World {
     }
 
     private async configureInterServer() {
+        this.stateEnforce();
+
         this.isc = this.opts.redisConnection.client.duplicate();
-        await this.sendInterServer("joined");
+        await this.sendInterServer("joined", {"instance": this.worldInstanceId});
         await this.isc.subscribeAsync("c:isc");
 
         // TODO: Move the handler elsewhere
         this.isc.on("message", async (channel, message) => {
             const msg = JSON.parse(message) as InterServerMessage;
             if (msg.event === "joined") {
-                Logger.info(`ISC> New server joined cluster`);
+                Logger.info(`ISC> [${this.worldInstanceId}] New server joined cluster: ${msg.meta.instance}`);
             } else if (msg.event === "invalidate_script") {
-                Logger.info("ISC> Script cache invalidated was requested");
+                Logger.info("ISC> [${this.worldInstanceId}] Script cache invalidated was requested by ${msg.meta.instance}");
                 Script.invalidateCache();
             }
         });
     }
 
-    private async sendInterServer(event: InterServerMessage["event"], meta?: {}) {
+    private async sendInterServer(event: InterServerMessage["event"], meta?: InterServerMessage["meta"]) {
+        this.stateEnforce();
         return this.opts.redisConnection.client.publishAsync("c:isc", JSON.stringify({event, meta} as InterServerMessage));
+    }
+
+    private stateEnforce(): void {
+        if (!this.hasInit || this.hasShutdown) {
+            throw new Error("The server is not in a usable state.");
+        }
     }
 }
