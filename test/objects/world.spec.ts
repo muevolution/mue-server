@@ -2,6 +2,7 @@ import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
+import { WorldNotInitError, WorldShutdownError } from "../../src/errors";
 import { initLogger, Logger } from "../../src/logging";
 import { InteriorMessage } from "../../src/netmodels";
 import { RedisConnection } from "../../src/redis";
@@ -109,8 +110,17 @@ describe("World", function() {
             await world.shutdown();
         });
 
-        xit("should fail if server has not been initialized", () => {});
-        xit("should fail if server has been shut down", () => {});
+        it("should fail if server has not been initialized", async () => {
+            const world = await createWorld();
+            expect(() => world.storage).to.throw(WorldNotInitError);
+            await world.shutdown();
+        });
+
+        it("should fail if server has been shut down", async () => {
+            const world = await createWorldAndInit();
+            await world.shutdown();
+            expect(() => world.storage).to.throw(WorldShutdownError);
+        });
     });
 
     describe("#publishMessage", () => {
@@ -172,8 +182,22 @@ describe("World", function() {
             await expect(monitor).to.fulfilled;
         });
 
-        xit("should fail if server has not been initialized", () => {});
-        xit("should fail if server has been shut down", () => {});
+        it("should fail if server has not been initialized", async () => {
+            const world2 = await createWorld();
+
+            const actual = world2.publishMessage("Hello world");
+            await expect(actual).to.be.rejectedWith(WorldNotInitError);
+
+            await world2.shutdown();
+        });
+
+        it("should fail if server has been shut down", async () => {
+            const world2 = await createWorldAndInit();
+            await world2.shutdown();
+
+            const actual = world2.publishMessage("Hello world");
+            await expect(actual).to.be.rejectedWith(WorldShutdownError);
+        });
     });
 
     xdescribe("#command", () => {});

@@ -2,6 +2,24 @@
 
 import { GameObjectTypes } from "./objects";
 
+export class UnusableWorldError extends Error {
+    constructor(message: string) {
+        super(`The server is not in a usable state. ${message}`);
+    }
+}
+
+export class WorldShutdownError extends Error {
+    constructor() {
+        super("The world has been shut down.");
+    }
+}
+
+export class WorldNotInitError extends Error {
+    constructor() {
+        super("The world has not yet been initialized.");
+    }
+}
+
 export class GameObjectIdExistsError extends Error {
     constructor(private objectId: string, private type: GameObjectTypes) {
         super(`Object(${type}) with the ID ${objectId} already exists!`);

@@ -3,6 +3,7 @@ import * as _ from "lodash";
 import { CommandRequest } from "../../client_types";
 import { CommandProcessor } from "../commandproc";
 import { generateId } from "../common";
+import { WorldNotInitError, WorldShutdownError } from "../errors";
 import { Logger } from "../logging";
 import { InteriorMessage } from "../netmodels";
 import { AsyncRedisClient, RedisConnection } from "../redis";
@@ -43,13 +44,18 @@ export class World {
     }
 
     public async shutdown(): Promise<void> {
-        if (!this.hasInit || this.hasShutdown) {
+        if (this.hasShutdown) {
             return;
         }
 
         this.hasShutdown = true;
+
         Logger.info(`World ${this.worldInstanceId} shutting down server upon request`);
-        await this.isc.quitAsync();
+
+        if (this.isc) {
+            await this.isc.quitAsync();
+        }
+
         await this.opts.redisConnection.client.quitAsync();
     }
 
@@ -235,8 +241,7 @@ export class World {
     }
 
     private stateEnforce(): void {
-        if (!this.hasInit || this.hasShutdown) {
-            throw new Error("The server is not in a usable state.");
-        }
+        if (!this.hasInit) throw new WorldNotInitError();
+        if (this.hasShutdown) throw new WorldShutdownError();
     }
 }
