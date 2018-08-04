@@ -53,6 +53,21 @@ export function splitExtendedId(id: string, checkType?: GameObjectTypes): {"id":
     }
 }
 
+export function expectExtendedId(id: string, type: GameObjectTypes): string {
+    const exid = splitExtendedId(id, type);
+    if (!exid) {
+        return null;
+    }
+
+    if (exid.type && exid.type !== type) {
+        throw new Error(`Object ID ${id} does not match requested type ${type}`);
+    } else if (exid.type) {
+        return id;
+    } else {
+        return `${type}:${id}`;
+    }
+}
+
 export type HashResult<T extends string> = {
     [P in T]: string;
 };

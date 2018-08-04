@@ -57,6 +57,9 @@ export class CommandProcessor {
     async hardcodedCommands(player: Player, command: LocalCommand): Promise<boolean> {
         // TODO: Implement hardcoded commands with decorators
         switch (command.command.toLowerCase()) {
+            case "$echo":
+                await builtins.command_echo(this.world, player, command);
+                return true;
             case "$quit":
                 await builtins.command_quit(player);
                 return true;

@@ -71,6 +71,10 @@ export function objectCreator(world: World, rootRoom: Room, rootPlayer: Player, 
     }
 
     return {
+        world,
+        rootRoom,
+        rootPlayer,
+        playerRoom,
         createTestAction,
         createTestPlayer,
         createTestItem,

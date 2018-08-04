@@ -11,7 +11,7 @@ import { Storage } from "../storage";
 import { Action } from "./action";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
-import { GameObjectTypes, InterServerMessage, RootFields, splitExtendedId } from "./models";
+import { expectExtendedId, GameObjectTypes, InterServerMessage, RootFields, splitExtendedId } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
 import { Script } from "./script";
@@ -96,14 +96,14 @@ export class World {
         return true;
     }
 
-    public command(player: Player, command: CommandRequest): Promise<boolean> {
+    public async command(player: Player, command: CommandRequest): Promise<boolean> {
         this.stateEnforce();
         return this.cmdproc.process(player, command);
     }
 
-    public getPlayerById(id: string): Promise<Player> {
+    public async getPlayerById(id: string): Promise<Player> {
         this.stateEnforce();
-        return Player.imitate(this, id);
+        return Player.imitate(this, expectExtendedId(id, GameObjectTypes.PLAYER));
     }
 
     public async getPlayerByName(name: string): Promise<Player> {
@@ -117,9 +117,9 @@ export class World {
         return this.getPlayerById(playerId);
     }
 
-    public getRoomById(id: string): Promise<Room> {
+    public async getRoomById(id: string): Promise<Room> {
         this.stateEnforce();
-        return Room.imitate(this, id);
+        return Room.imitate(this, expectExtendedId(id, GameObjectTypes.ROOM));
     }
 
     public async getRootRoom(): Promise<Room> {
@@ -133,22 +133,22 @@ export class World {
         return this.getRoomById(rootRoomId);
     }
 
-    public getItemById(id: string): Promise<Item> {
+    public async getItemById(id: string): Promise<Item> {
         this.stateEnforce();
-        return Item.imitate(this, id);
+        return Item.imitate(this, expectExtendedId(id, GameObjectTypes.ITEM));
     }
 
-    public getScriptById(id: string): Promise<Script> {
+    public async getScriptById(id: string): Promise<Script> {
         this.stateEnforce();
-        return Script.imitate(this, id);
+        return Script.imitate(this, expectExtendedId(id, GameObjectTypes.SCRIPT));
     }
 
-    public getActionById(id: string): Promise<Action> {
+    public async getActionById(id: string): Promise<Action> {
         this.stateEnforce();
-        return Action.imitate(this, id);
+        return Action.imitate(this, expectExtendedId(id, GameObjectTypes.ACTION));
     }
 
-    public getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject> {
+    public async getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject> {
         if (!id) {
             return null;
         }
