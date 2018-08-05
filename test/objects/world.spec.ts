@@ -5,7 +5,7 @@ import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist, WorldNotInitError, WorldShutdownError } from "../../src/errors";
 import { initLogger, Logger } from "../../src/logging";
 import { InteriorMessage } from "../../src/netmodels";
-import { Player, Room, Item, Script, Action } from "../../src/objects";
+import { Action, GameObjectTypes, Item, Player, Room, Script } from "../../src/objects";
 import { RedisConnection } from "../../src/redis";
 import { beforeTestGroup, objectCreator } from "../common";
 import { MockWorld } from "./world.mock";
@@ -207,13 +207,13 @@ describe("World", function() {
         let world: MockWorld;
         let testPlayer: Player;
 
-        beforeEach(async () => {
+        before(async () => {
             world = await createWorldAndInit();
             const creator = await makeCreator(world);
             testPlayer = await creator().createTestPlayer("TestPlayer");
         });
 
-        afterEach(async () => {
+        after(async () => {
             await world.shutdown();
         });
 
@@ -246,13 +246,13 @@ describe("World", function() {
         let world: MockWorld;
         let testPlayer: Player;
 
-        beforeEach(async () => {
+        before(async () => {
             world = await createWorldAndInit();
             const creator = await makeCreator(world);
             testPlayer = await creator().createTestPlayer("TestPlayer");
         });
 
-        afterEach(async () => {
+        after(async () => {
             await world.shutdown();
         });
 
@@ -288,13 +288,13 @@ describe("World", function() {
         let world: MockWorld;
         let testPlayer: Player;
 
-        beforeEach(async () => {
+        before(async () => {
             world = await createWorldAndInit();
             const creator = await makeCreator(world);
             testPlayer = await creator().createTestPlayer("TestPlayer");
         });
 
-        afterEach(async () => {
+        after(async () => {
             await world.shutdown();
         });
 
@@ -330,13 +330,13 @@ describe("World", function() {
         let world: MockWorld;
         let testRoom: Room;
 
-        beforeEach(async () => {
+        before(async () => {
             world = await createWorldAndInit();
             const creator = await makeCreator(world);
             testRoom = await creator().createTestRoom("TestRoom");
         });
 
-        afterEach(async () => {
+        after(async () => {
             await world.shutdown();
         });
 
@@ -380,19 +380,19 @@ describe("World", function() {
         });
 
         it("should fail if server has not been initialized", async () => {
-            const world2 = await createWorld();
+            const world = await createWorld();
 
-            const actual = world2.getRootRoom();
+            const actual = world.getRootRoom();
             await expect(actual).to.be.rejectedWith(WorldNotInitError);
 
-            await world2.shutdown();
+            await world.shutdown();
         });
 
         it("should fail if server has been shut down", async () => {
-            const world2 = await createWorldAndInit();
-            await world2.shutdown();
+            const world = await createWorldAndInit();
+            await world.shutdown();
 
-            const actual = world2.getRootRoom();
+            const actual = world.getRootRoom();
             await expect(actual).to.be.rejectedWith(WorldShutdownError);
         });
     });
@@ -401,13 +401,13 @@ describe("World", function() {
         let world: MockWorld;
         let testItem: Item;
 
-        beforeEach(async () => {
+        before(async () => {
             world = await createWorldAndInit();
             const creator = await makeCreator(world);
             testItem = await creator().createTestItem("TestItem");
         });
 
-        afterEach(async () => {
+        after(async () => {
             await world.shutdown();
         });
 
@@ -443,13 +443,13 @@ describe("World", function() {
         let world: MockWorld;
         let testScript: Script;
 
-        beforeEach(async () => {
+        before(async () => {
             world = await createWorldAndInit();
             const creator = await makeCreator(world);
             testScript = await creator().createTestScript("TestScript");
         });
 
-        afterEach(async () => {
+        after(async () => {
             await world.shutdown();
         });
 
@@ -485,13 +485,13 @@ describe("World", function() {
         let world: MockWorld;
         let testAction: Action;
 
-        beforeEach(async () => {
+        before(async () => {
             world = await createWorldAndInit();
             const creator = await makeCreator(world);
             testAction = await creator().createTestAction("TestAction");
         });
 
-        afterEach(async () => {
+        after(async () => {
             await world.shutdown();
         });
 
@@ -523,11 +523,182 @@ describe("World", function() {
         });
     });
 
-    xdescribe("#getObjectById", () => {});
-    xdescribe("#getObjectsByIds", () => {});
-    xdescribe("#getActiveServers", () => {});
+    describe("#getObjectById", () => {
+        let world: MockWorld;
+        let rootPlayer: Player;
+        let playerRoom: Room;
+        let testItem: Item;
+        let testScript: Script;
+        let testAction: Action;
+
+        before(async () => {
+            world = await createWorldAndInit();
+            const creator = (await makeCreator(world))();
+            rootPlayer = creator.rootPlayer;
+            playerRoom = creator.playerRoom;
+            testItem = await creator.createTestItem("TestItem");
+            testScript = await creator.createTestScript("TestScript");
+            testAction = await creator.createTestAction("TestAction");
+        });
+
+        after(async () => {
+            await world.shutdown();
+        });
+
+        it("should get an object by long ID and type", async () => {
+            const actual = await world.getObjectById(rootPlayer.id, GameObjectTypes.PLAYER);
+            expect(actual).to.exist.and.have.property("id").equal(rootPlayer.id);
+        });
+
+        it("should get an object by long ID with no type", async () => {
+            const actual = await world.getObjectById(rootPlayer.id);
+            expect(actual).to.exist.and.have.property("id").equal(rootPlayer.id);
+        });
+
+        it("should return a player", async () => {
+            const actual = await world.getObjectById(rootPlayer.id);
+            expect(actual).to.exist.and.have.property("id").equal(rootPlayer.id);
+        });
+
+        it("should return a room", async () => {
+            const actual = await world.getObjectById(playerRoom.id, GameObjectTypes.ROOM);
+            expect(actual).to.exist.and.have.property("id").equal(playerRoom.id);
+        });
+
+        it("should return an item", async () => {
+            const actual = await world.getObjectById(testItem.id, GameObjectTypes.ITEM);
+            expect(actual).to.exist.and.have.property("id").equal(testItem.id);
+        });
+
+        it("should return a script", async () => {
+            const actual = await world.getObjectById(testScript.id, GameObjectTypes.SCRIPT);
+            expect(actual).to.exist.and.have.property("id").equal(testScript.id);
+        });
+
+        it("should return an action", async () => {
+            const actual = await world.getObjectById(testAction.id, GameObjectTypes.ACTION);
+            expect(actual).to.exist.and.have.property("id").equal(testAction.id);
+        });
+
+        it("should fail if given a short ID", async () => {
+            const actual = world.getObjectById("asdf");
+            await expect(actual).to.be.rejected;
+        });
+
+        it("should fail if given a long ID with the wrong type", async () => {
+            const actual = world.getObjectById("r:asdf", GameObjectTypes.PLAYER);
+            await expect(actual).to.be.rejected;
+        });
+    });
+
+    describe("#getObjectsByIds", () => {
+        let world: MockWorld;
+        let rootRoom: Room;
+        let rootPlayer: Player;
+        let testPlayer: Player;
+
+        before(async () => {
+            world = await createWorldAndInit();
+            const creator = (await makeCreator(world))();
+            rootRoom = creator.rootRoom;
+            rootPlayer = creator.rootPlayer;
+            testPlayer = await creator.createTestPlayer("TestPlayer");
+        });
+
+        after(async () => {
+            await world.shutdown();
+        });
+
+        it("should return multiple objects passed as strings", async () => {
+            const ids = [rootPlayer.id, testPlayer.id];
+            const actual = await world.getObjectsByIds(ids);
+
+            expect(actual).to.be.an("array").with.length(2);
+            expect(actual[0]).to.exist.and.have.property("id").equal(rootPlayer.id);
+            expect(actual[1]).to.exist.and.have.property("id").equal(testPlayer.id);
+        });
+
+        it("should return multiple objects passed as strings with types", async () => {
+            const ids = [rootPlayer.id, testPlayer.id];
+            const actual = await world.getObjectsByIds(ids, GameObjectTypes.PLAYER);
+
+            expect(actual).to.be.an("array").with.length(2);
+            expect(actual[0]).to.exist.and.have.property("id").equal(rootPlayer.id);
+            expect(actual[1]).to.exist.and.have.property("id").equal(testPlayer.id);
+        });
+
+        it("should return multiple objects passed as promised strings", async () => {
+            const ids = Promise.resolve([rootPlayer.id, testPlayer.id]);
+            const actual = await world.getObjectsByIds(ids);
+
+            expect(actual).to.be.an("array").with.length(2);
+            expect(actual[0]).to.exist.and.have.property("id").equal(rootPlayer.id);
+            expect(actual[1]).to.exist.and.have.property("id").equal(testPlayer.id);
+        });
+
+        it("should return empty if null", async () => {
+            const actual = await world.getObjectsByIds([]);
+
+            expect(actual).to.be.an("array").with.length(0);
+        });
+
+        it("should fail if any objects don't match type", async () => {
+            const ids = Promise.resolve([rootPlayer.id, rootRoom.id]);
+            const actual = world.getObjectsByIds(ids, GameObjectTypes.PLAYER);
+
+            expect(actual).to.be.rejected;
+        });
+    });
+
+    xdescribe("#getActiveServers", () => {
+        let world: MockWorld;
+
+        before(async () => {
+            world = await createWorldAndInit();
+        });
+
+        after(async () => {
+            await world.shutdown();
+        });
+
+        it("should return at least the current server", async () => {
+            const actual = await world.getActiveServers();
+            expect(actual).to.equal(1);
+        });
+
+        it("should return all servers when multiple are connected", async () => {
+            const world2 = await createWorld();
+
+            const actual = await world.getActiveServers();
+            expect(actual).to.equal(2);
+
+            await world2.shutdown();
+        });
+
+        it("should fail if server has not been initialized", async () => {
+            const world2 = await createWorld();
+
+            const actual = world2.getActiveServers();
+            await expect(actual).to.be.rejectedWith(WorldNotInitError);
+
+            await world2.shutdown();
+        });
+
+        it("should fail if server has been shut down", async () => {
+            const world2 = await createWorldAndInit();
+            await world2.shutdown();
+
+            const actual = world2.getActiveServers();
+            await expect(actual).to.be.rejectedWith(WorldShutdownError);
+        });
+    });
+
+    // TODO: This needs a simulated player
     xdescribe("#getActiveRoomIds", () => {});
+
+    // TODO: This needs a simulated player
     xdescribe("#getConnectedPlayerIds", () => {});
-    xdescribe("#find", () => {});
+
+    // TODO: Figure out how to test this
     xdescribe("#invalidateScriptCache", () => {});
 });

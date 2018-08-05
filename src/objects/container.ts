@@ -1,7 +1,12 @@
 import * as _ from "lodash";
 
+import { Action } from "./action";
 import { GameObject } from "./gameobject";
+import { Item } from "./item";
 import { GameObjectTypes } from "./models";
+import { Player } from "./player";
+import { Room } from "./room";
+import { Script } from "./script";
 import { World } from "./world";
 
 export interface Container {
@@ -12,7 +17,13 @@ export interface Container {
 
 export interface GameObjectContainer extends GameObject, Container {}
 
-export async function GetContents(world: World, container: GameObject, type?: GameObjectTypes) {
+export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.ROOM): Promise<Room[]>;
+export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.PLAYER): Promise<Player[]>;
+export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.ITEM): Promise<Item[]>;
+export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.SCRIPT): Promise<Script[]>;
+export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.ACTION): Promise<Action[]>;
+export async function GetContents(world: World, container: GameObject, type?: GameObjectTypes): Promise<GameObject[]>;
+export async function GetContents(world: World, container: GameObject, type?: GameObjectTypes): Promise<GameObject[]> {
     const contentIds = await world.storage.getContents(container, type);
     const contentP = _.map(contentIds, (id) => {
         return world.getObjectById(id, type);

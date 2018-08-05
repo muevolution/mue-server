@@ -148,6 +148,12 @@ export class World {
         return Action.imitate(this, expectExtendedId(id, GameObjectTypes.ACTION));
     }
 
+    public async getObjectById(id: string, type: GameObjectTypes.ROOM): Promise<Room>;
+    public async getObjectById(id: string, type: GameObjectTypes.PLAYER): Promise<Player>;
+    public async getObjectById(id: string, type: GameObjectTypes.ITEM): Promise<Item>;
+    public async getObjectById(id: string, type: GameObjectTypes.SCRIPT): Promise<Script>;
+    public async getObjectById(id: string, type: GameObjectTypes.ACTION): Promise<Action>;
+    public async getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject>;
     public async getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject> {
         if (!id) {
             return null;
@@ -156,14 +162,14 @@ export class World {
         const split = splitExtendedId(id);
         if (!type) {
             if (!split.type) {
-                throw new Error("ID was not extended");
+                throw new Error(`ID ${id} was not extended`);
             }
 
             type = split.type;
         }
 
-        if (type !== split.type) {
-            throw new Error(`Types do not match. Got ${split.type}, expected ${type}`);
+        if (type && type !== split.type) {
+            throw new Error(`Types do not match. With ${id}, got ${split.type}, expected ${type}`);
         }
 
         switch (type) {
@@ -180,8 +186,14 @@ export class World {
         }
     }
 
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ROOM): Promise<Room[]>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.PLAYER): Promise<Player[]>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ITEM): Promise<Item[]>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.SCRIPT): Promise<Script[]>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ACTION): Promise<Action[]>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type?: GameObjectTypes): Promise<GameObject[]>;
     public async getObjectsByIds(ids: Promise<string[]> | string[], type?: GameObjectTypes): Promise<GameObject[]> {
-        return Promise.all(_.map(await ids, (id) => this.getObjectById(id)));
+        return Promise.all(_.map(await ids, (id) => this.getObjectById(id, type)));
     }
 
     public async getActiveServers(): Promise<number> {
@@ -203,13 +215,6 @@ export class World {
 
         const players = await this.opts.redisConnection.client.pubsubAsync("channels", "c:p:*");
         return _.map(players, (ch) => ch.substring(2));
-    }
-
-    public async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
-        this.stateEnforce();
-
-        const rootRoom = await this.getRootRoom();
-        return rootRoom.find(term, type);
     }
 
     public async invalidateScriptCache(): Promise<void> {

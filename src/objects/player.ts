@@ -9,6 +9,7 @@ import { Item } from "./item";
 import { PlayerLocations, PlayerParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Room } from "./room";
+import { Script } from "./script";
 import { World } from "./world";
 
 const PLAYER_CACHE = {} as {[id: string]: Player};
@@ -82,7 +83,13 @@ export class Player extends GameObject implements Container {
         return result;
     }
 
-    getContents(type?: GameObjectTypes) {
+    getContents(type: GameObjectTypes.ROOM): Promise<Room[]>;
+    getContents(type: GameObjectTypes.PLAYER): Promise<Player[]>;
+    getContents(type: GameObjectTypes.ITEM): Promise<Item[]>;
+    getContents(type: GameObjectTypes.SCRIPT): Promise<Script[]>;
+    getContents(type: GameObjectTypes.ACTION): Promise<Action[]>;
+    getContents(type?: GameObjectTypes): Promise<GameObject[]>;
+    getContents(type?: GameObjectTypes): Promise<GameObject[]> {
         return GetContents(this.world, this, type);
     }
 

@@ -22,7 +22,8 @@ export async function getScripts() {
 
 async function updateScript(world: World, filename: string, creator: Player, location: Player | Room | Item, actionDestination?: Player | Room | Item) {
     let scriptCreated = false;
-    let script = await world.find(filename, GameObjectTypes.SCRIPT) as Script;
+    const rootRoom = await world.getRootRoom();
+    let script = await rootRoom.findIn(filename, GameObjectTypes.SCRIPT) as Script;
     if (!script) {
         script = await Script.create(world, filename, creator, location);
         scriptCreated = true;

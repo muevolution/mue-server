@@ -7,6 +7,8 @@ import { GameObject } from "./gameobject";
 import { ItemLocations, ItemParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
+import { Room } from "./room";
+import { Script } from "./script";
 import { World } from "./world";
 
 // TODO: If we want to support multi-server we need to use many-instance with some sort of cross-server lifecycle system
@@ -54,7 +56,13 @@ export class Item extends GameObject implements Container {
         return super.getLocation() as Promise<ItemLocations>;
     }
 
-    getContents(type?: GameObjectTypes) {
+    getContents(type: GameObjectTypes.ROOM): Promise<Room[]>;
+    getContents(type: GameObjectTypes.PLAYER): Promise<Player[]>;
+    getContents(type: GameObjectTypes.ITEM): Promise<Item[]>;
+    getContents(type: GameObjectTypes.SCRIPT): Promise<Script[]>;
+    getContents(type: GameObjectTypes.ACTION): Promise<Action[]>;
+    getContents(type?: GameObjectTypes): Promise<GameObject[]>;
+    getContents(type?: GameObjectTypes): Promise<GameObject[]> {
         return GetContents(this.world, this, type);
     }
 
