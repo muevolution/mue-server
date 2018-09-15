@@ -36,6 +36,8 @@ describe("Script", () => {
             firstScript = await creator().createTestScript("Script.create");
             expect(firstScript).to.exist.and.have.property("id").be.a("string").and.length.at.least(1);
         });
+
+        xit("should create with meta value fallbacks");
     });
 
     describe(".imitate()", () => {

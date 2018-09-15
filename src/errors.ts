@@ -38,6 +38,12 @@ export class GameObjectDestroyedError extends Error {
     }
 }
 
+export class InvalidGameObjectNameError extends Error {
+    constructor(private objectId: string, private type: GameObjectTypes) {
+        super(`Object(${type}) with the ID ${objectId} does not have a proper name`);
+    }
+}
+
 export class InvalidGameObjectParentError extends Error {
     constructor(private objectId: string, private type: GameObjectTypes) {
         super(`Object(${type}) with the ID ${objectId} is not a valid parent`);

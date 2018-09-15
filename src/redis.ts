@@ -25,6 +25,12 @@ export class RedisConnection {
         const channelCount = _.filter(results, (v, i) => i % 2 !== 0);
         return _.fromPairs(_.zip(channelNames, channelCount));
     }
+
+    async multiWrap(cb: (multi: redis.Multi) => Promise<any> | any): Promise<any[]> {
+        const multi = this.client.multi();
+        await cb(multi);
+        return multi.execAsync();
+    }
 }
 
 export interface AsyncRedisClient extends redis.RedisClient {
@@ -33,16 +39,17 @@ export interface AsyncRedisClient extends redis.RedisClient {
 
     getAsync(key: string): Promise<string>;
     setAsync(key: string, value: string): Promise<"OK">;
-
-    lrangeAsync(key: string, start: number, end: number): Promise<string[]>;
-    lremAsync(key: string, value: string): Promise<number>;
-    rpushAsync(key: string, value: string): Promise<number>;
+    existsAsync(key: string): Promise<number>;
 
     hgetAsync(key: string, field: string): Promise<string>;
     hgetallAsync(key: string): Promise<{[key: string]: string}>;
     hmsetAsync(key: string, value: {[key: string]: string}): Promise<boolean>;
     hsetAsync(key: string, field: string, value: string): Promise<number>;
     hdelAsync(key: string, field: string): Promise<number>;
+    hexistsAsync(key: string, field: string): Promise<number>;
+
+    smembersAsync(key: string): Promise<string[]>;
+    sismemberAsync(key: string, member: string): Promise<number>;
 
     pubsubAsync(command: "channels", pattern?: string): Promise<string[]>;
     pubsubAsync(command: "numsub", ...channels: string[]): Promise<Array<string|number>>;

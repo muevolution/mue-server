@@ -74,9 +74,9 @@ export type HashResult<T extends string> = {
 
 export interface MetaData {
     name: string;
-    creator: string;
-    parent: string;
-    location: string;
+    creator?: string;
+    parent?: string;
+    location?: string;
 }
 
 export type MetaKeys = keyof MetaData;

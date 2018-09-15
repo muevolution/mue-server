@@ -61,7 +61,7 @@ export class World {
 
     public get storage(): Storage {
         this.stateEnforce();
-        return new Storage(this.opts.redisConnection.client);
+        return new Storage(this.opts.redisConnection);
     }
 
     public async publishMessage(message: InteriorMessage | string, target?: GameObject, meta?: {}): Promise<boolean> {

@@ -1,11 +1,13 @@
 import { EventEmitter } from "events";
 
-import { BaseTypedEmitter, generateId } from "../common";
+import { BaseTypedEmitter } from "../common";
 import { GameObjectDestroyedError, InvalidGameObjectLocationError, InvalidGameObjectParentError } from "../errors";
 import { PropStructure, PropValues } from "../storage";
 import { AllContainers, AllLocations } from "./model-aliases";
 import { ALL_CONTAINER_TYPES, ALL_PARENT_TYPES, GameObjectMessage, GameObjectTypes, IGameObject, MetaData, splitExtendedId } from "./models";
 import { World } from "./world";
+
+const UNASSIGNED_ID = Symbol("Unassigned GameObject ID");
 
 export abstract class GameObject<MD extends MetaData = MetaData> extends EventEmitter implements IGameObject {
     public static checkType(data: GameObject | string, ...types: GameObjectTypes[]): boolean {
@@ -26,25 +28,29 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     }
 
     protected _meta: MD;
-    private _id: string;
+    private _id: string | typeof UNASSIGNED_ID;
     private _type: GameObjectTypes;
     private _isDestroyed: boolean = false;
     private tupdater: BaseTypedEmitter<GameObjectMessage, GameObjectMessage>;
 
     protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
         super();
-        this._id = id ? splitExtendedId(id, objectType).id : generateId();
+        this._id = id ? splitExtendedId(id, objectType).id : UNASSIGNED_ID;
         this._type = objectType;
         this._meta = meta;
         this.tupdater = new BaseTypedEmitter(this);
     }
 
     public get shortid() {
-        return this._id;
+        return this._id.toString();
     }
 
     public get id() {
-        return `${this._type}:${this._id}`;
+        return `${this._type}:${this.shortid}`;
+    }
+
+    public get isPendingAdd() {
+        return this._id === UNASSIGNED_ID;
     }
 
     public get name() {
@@ -61,6 +67,19 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
 
     public get meta(): Readonly<MD> {
         return this._meta;
+    }
+
+    /** Reassign the object's short ID. For use by Storage.addObject only */
+    public setInitialId(newId: string) {
+        if (!this.isPendingAdd) {
+            throw new Error("Cannot reassign an ID to an item with one already defined");
+        }
+
+        if (newId === null) {
+            throw new Error("Reassigned ID cannot be null");
+        }
+
+        this._id = newId;
     }
 
     public get parent() {

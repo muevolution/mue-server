@@ -1,6 +1,6 @@
 import * as _ from "lodash";
 
-import { GameObjectIdDoesNotExist, PlayerNameAlreadyExistsError } from "../errors";
+import { GameObjectIdDoesNotExist } from "../errors";
 import { InteriorMessage } from "../netmodels";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
@@ -22,12 +22,6 @@ export class Player extends GameObject implements Container {
             "parent": parent ? parent.id : null,
             "location": location ? location.id : parent ? parent.id : null,
         });
-
-        // Make sure a player with this name doesn't already exist
-        const exPlayer = await world.storage.findPlayerByName(name);
-        if (exPlayer) {
-            throw new PlayerNameAlreadyExistsError(name, exPlayer);
-        }
 
         await world.storage.addObject(p);
         PLAYER_CACHE[p.id] = p;

@@ -83,6 +83,14 @@ describe("World", function() {
 
     // Actual methods
 
+    describe(".constructor", () => {
+        it("should construct successfully", async () => {
+            const world = await createWorld();
+            expect(world).to.be.a((world as any)[Symbol.toStringTag]);
+            await world.shutdown();
+        });
+    });
+
     describe("#init()", () => {
         it("should init successfully", async () => {
             const world = await createWorld();
