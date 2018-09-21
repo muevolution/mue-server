@@ -21,8 +21,8 @@ export class RedisConnection {
 
     async numsub(...channels: string[]): Promise<{[channel: string]: number}> {
         const results = await this.client.pubsubAsync("numsub", ...channels);
-        const channelNames = _.filter(results, (v, i) => i % 2 === 0);
-        const channelCount = _.filter(results, (v, i) => i % 2 !== 0);
+        const channelNames = _.filter(results, (v, i) => i % 2 === 0) as string[];
+        const channelCount = _.filter(results, (v, i) => i % 2 !== 0) as number[];
         return _.fromPairs(_.zip(channelNames, channelCount));
     }
 

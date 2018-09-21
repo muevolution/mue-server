@@ -1,8 +1,5 @@
 {
     "compilerOptions": {
-        "plugins": [
-            { "name": "tslint-language-service" }
-        ],
         "module": "commonjs",
         "target": "es2017",
         "lib": ["es2017"],

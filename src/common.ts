@@ -27,12 +27,12 @@ interface CompatibleEmitter {
 export class BaseTypedEmitter<O, I> {
     constructor(protected socket: CompatibleEmitter, protected redisClient?: AsyncRedisClient) {}
 
-    public emit<T extends keyof O, K extends O[T]>(event: T, data: K) {
+    public emit<T extends Extract<keyof O, string>, K extends O[T]>(event: T, data: K) {
         RedisClientDebug(this.redisClient, {"type": "outbound", event, data});
         return this.socket.emit(event, data);
     }
 
-    public on<T extends keyof I, K extends I[T]>(event: T, listener: (data: K) => (Promise<any> | void), errorHandler?: (err: any) => any) {
+    public on<T extends Extract<keyof I, string>, K extends I[T]>(event: T, listener: (data: K) => (Promise<any> | void), errorHandler?: (err: any) => any) {
         return this.socket.on(event, (data: K) => {
             const res = Promise.resolve(listener(data));
             res.then((d) => {
