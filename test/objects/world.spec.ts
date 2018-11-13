@@ -1,4 +1,3 @@
-import * as bluebird from "bluebird";
 import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
@@ -16,9 +15,6 @@ initLogger();
 chai.use(chaiSubset);
 chai.use(chaiAsPromised);
 
-type MonitorExpectFunc = (args: string[], raw?: string) => boolean;
-type MonitorExpectation = string | MonitorExpectFunc;
-
 describe("World", () => {
     async function createWorld(): Promise<MockWorld> {
         const redis = MockRedisConnection.connect();
@@ -30,34 +26,6 @@ describe("World", () => {
         const world = await createWorld();
         await world.init();
         return world;
-    }
-
-    async function createMonitor(world: MockWorld, expected: MonitorExpectation, timeout: number = 10000) {
-        // Enable monitor mode for these tests
-        const result = await world.redis.client.monitor();
-        if (!result) {
-            throw new Error("Unable to create monitor: " + result);
-        }
-
-        return {
-            "monitor": new bluebird<string[]>((resolve, reject) => {
-                // Logger.debug("createMonitor", { expected });
-                const listener = (time: string, args: string[]) => {
-                    const raw_reply = args.join(" ");
-                    // Logger.debug("Redis Monitor", { time, args, raw_reply });
-                    if (
-                        (typeof expected === "string" && raw_reply.indexOf(expected) > -1) ||
-                        (typeof expected === "function" && expected(args, raw_reply))
-                    ) {
-                        // Logger.debug(`Matched [${expected}] for [${args}]`);
-                        resolve(args);
-                        result.removeListener("monitor", listener);
-                    }
-                };
-
-                result.on("monitor", listener);
-            }).timeout(timeout)
-        };
     }
 
     function createEndPromise(redis: MockRedisConnection) {
@@ -94,10 +62,10 @@ describe("World", () => {
     describe("#init()", () => {
         it("should init successfully", async () => {
             const world = await createWorld();
-            const p = createMonitor(world, "joined");
+            const { monitor } = await world.addMonitor("joined");
 
             await expect(world.init()).to.eventually.be.fulfilled;
-            await expect(p).to.eventually.be.fulfilled;
+            await expect(monitor).to.eventually.be.fulfilled;
             await world.shutdown();
         });
     });
@@ -146,25 +114,27 @@ describe("World", () => {
         });
 
         it("should publish a plain message to the world", async () => {
-            const { monitor } = await createMonitor(world, "Hello world");
+            const { monitor, marker } = await world.addMonitor("Hello world");
 
             const actual = world.publishMessage("Hello world");
             await expect(actual).to.eventually.be.true;
             await expect(monitor).to.eventually.be.fulfilled;
+            world.removeMonitor(marker);
         });
 
         it("should publish a plain message to a target", async () => {
             const creator = await makeCreator(world);
             const item = await creator().createTestItem("TestyItem");
-            const { monitor } = await createMonitor(world, "Hello item");
+            const { monitor, marker } = await world.addMonitor("Hello item");
 
             const actual = world.publishMessage("Hello item", item);
             await expect(actual).to.eventually.be.true;
             await expect(monitor).to.eventually.be.fulfilled;
+            world.removeMonitor(marker);
         });
 
         it("should publish an interior message to the world", async () => {
-            const { monitor } = await createMonitor(world, "Hello interior");
+            const { monitor, marker } = await world.addMonitor("Hello interior");
 
             const actual = world.publishMessage({
                 "message": "Hello interior",
@@ -175,12 +145,13 @@ describe("World", () => {
             } as InteriorMessage);
             await expect(actual).to.eventually.be.true;
             await expect(monitor).to.eventually.be.fulfilled;
+            world.removeMonitor(marker);
         });
 
         it("should publish an interior message to a target", async () => {
             const creator = await makeCreator(world);
             const item = await creator().createTestItem("TestyItem");
-            const { monitor } = await createMonitor(world, "Hello interior item");
+            const { monitor, marker } = await world.addMonitor("Hello interior item");
 
             const actual = world.publishMessage({
                 "message": "Hello interior item",
@@ -191,6 +162,7 @@ describe("World", () => {
             } as InteriorMessage, item);
             await expect(actual).to.eventually.be.true;
             await expect(monitor).to.eventually.be.fulfilled;
+            world.removeMonitor(marker);
         });
 
         it("should fail if server has not been initialized", async () => {

@@ -54,7 +54,7 @@ export class CommandProcessor {
         return false;
     }
 
-    async hardcodedCommands(player: Player, command: LocalCommand): Promise<boolean> {
+    private async hardcodedCommands(player: Player, command: LocalCommand): Promise<boolean> {
         // TODO: Implement hardcoded commands with decorators
         switch (command.command.toLowerCase()) {
             case "$echo":
@@ -77,7 +77,7 @@ export class CommandProcessor {
         return false;
     }
 
-    async actionCommands(player: Player, command: LocalCommand): Promise<boolean> {
+    private async actionCommands(player: Player, command: LocalCommand): Promise<boolean> {
         const action = await player.find(command.command, GameObjectTypes.ACTION) as Action;
         if (!action || !action.target) {
             return false;

@@ -99,9 +99,11 @@ export class Player extends GameObject implements Container {
         let parent: Room;
         if (type === GameObjectTypes.ACTION) {
             parent = await this.getParent();
-            const pRes = await parent.find(term, type);
-            if (pRes) {
-                return pRes;
+            if (parent) {
+                const pRes = await parent.find(term, type);
+                if (pRes) {
+                    return pRes;
+                }
             }
         }
 
