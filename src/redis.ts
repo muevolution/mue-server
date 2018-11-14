@@ -1,68 +1,41 @@
-import * as bluebird from "bluebird";
+import * as Redis from "ioredis";
 import * as _ from "lodash";
-import * as redis from "redis";
 
 import { config } from "./config";
-
-bluebird.promisifyAll(redis.RedisClient.prototype);
-bluebird.promisifyAll(redis.Multi.prototype);
+import { Logger } from "./logging";
 
 
 export class RedisConnection {
     public static connect() {
-        return new RedisConnection(redis.createClient(config.redis));
+        return new RedisConnection(new Redis(config.redis));
     }
 
-    public client: AsyncRedisClient;
+    constructor(public client: Redis.Redis) {
+        this.client.on("error", (err) => {
+            Logger.error("Redis error", err);
+        });
+    }
 
-    constructor(clientSync: redis.RedisClient) {
-        this.client = clientSync as AsyncRedisClient;
+    duplicate() {
+        return new RedisConnection(this.client.duplicate());
     }
 
     async numsub(...channels: string[]): Promise<{[channel: string]: number}> {
-        const results = await this.client.pubsubAsync("numsub", ...channels);
+        // ioredis seems to be missing types for this
+        const results = (await (this.client as any).pubsub("numsub", ...channels)) as Array<string | number>;
         const channelNames = _.filter(results, (v, i) => i % 2 === 0) as string[];
         const channelCount = _.filter(results, (v, i) => i % 2 !== 0) as number[];
         return _.fromPairs(_.zip(channelNames, channelCount));
     }
 
-    async multiWrap(cb: (multi: redis.Multi) => Promise<any> | any): Promise<any[]> {
+    async channels(query: string): Promise<string[]> {
+        // ioredis seems to be missing types for this
+        return (this.client as any).pubsub("channels", query);
+    }
+
+    async multiWrap(cb: (multi: Redis.Pipeline) => Promise<any> | any): Promise<any[]> {
         const multi = this.client.multi();
         await cb(multi);
-        return multi.execAsync();
+        return multi.exec();
     }
-}
-
-export interface AsyncRedisClient extends redis.RedisClient {
-    duplicate(): AsyncRedisClient;
-    multi(): AsyncRedisMulti;
-
-    getAsync(key: string): Promise<string>;
-    setAsync(key: string, value: string): Promise<"OK">;
-    existsAsync(key: string): Promise<number>;
-
-    hgetAsync(key: string, field: string): Promise<string>;
-    hgetallAsync(key: string): Promise<{[key: string]: string}>;
-    hmsetAsync(key: string, value: {[key: string]: string}): Promise<boolean>;
-    hsetAsync(key: string, field: string, value: string): Promise<number>;
-    hdelAsync(key: string, field: string): Promise<number>;
-    hexistsAsync(key: string, field: string): Promise<number>;
-
-    smembersAsync(key: string): Promise<string[]>;
-    sismemberAsync(key: string, member: string): Promise<number>;
-
-    pubsubAsync(command: "channels", pattern?: string): Promise<string[]>;
-    pubsubAsync(command: "numsub", ...channels: string[]): Promise<Array<string|number>>;
-    subscribeAsync(channel: string | string[]): Promise<string>;
-    psubscribeAsync(pattern: string | string[]): Promise<string>;
-    unsubscribeAsync(channel: string | string[]): Promise<string>;
-    publishAsync(channel: string, value: string): Promise<number>;
-
-    monitorAsync(): Promise<"OK">;
-    quitAsync(): Promise<"OK">;
-    flushdbAsync(): Promise<string>;
-}
-
-export interface AsyncRedisMulti extends redis.Multi {
-    execAsync(): Promise<any[]>;
 }

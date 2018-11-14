@@ -13,6 +13,7 @@
             "outFiles": [
                 "${workspaceRoot}/build/**/*.js"
             ],
+            "remoteRoot": "/mnt/d/Users/Kauko/Development/mue/mue-server/",
             "localRoot": "${workspaceRoot}",
             "smartStep": true
         },
@@ -31,6 +32,27 @@
             ],
             "localRoot": "${workspaceRoot}",
             "smartStep": true
-        }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch current file w/ mocha",
+            "program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
+            "env": {
+              "TS_NODE_PROJECT": "tsconfig.json"
+            },
+            "args": [
+              "--ui",
+              "tdd",
+              "--timeout",
+              "4000",
+              "--colors",
+              "--require",
+              "ts-node/register",
+              "${relativeFile}"
+            ],
+            "cwd": "${workspaceRoot}",
+            "internalConsoleOptions": "openOnSessionStart"
+          }
     ]
 }

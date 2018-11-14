@@ -34,6 +34,7 @@ export class Player extends GameObject implements Container {
         }
 
         const meta = await world.storage.getMeta(id);
+        console.log("got", meta);
         if (!meta) {
             throw new GameObjectIdDoesNotExist(id, GameObjectTypes.PLAYER);
         }

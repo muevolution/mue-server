@@ -12,7 +12,7 @@ const redis = RedisConnection.connect();
 async function main() {
     Logger.info("Starting activity monitor");
 
-    await redis.client.psubscribeAsync("*");
+    await redis.client.psubscribe("*");
     redis.client.on("pmessage", (filter, channel, message) => {
         Logger.info(`[${channel}]>> ${message}`);
     });

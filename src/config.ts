@@ -1,5 +1,4 @@
 import * as nconf from "nconf";
-import * as redis from "redis";
 
 export interface TelnetConfig {
     port: number;
@@ -27,6 +26,6 @@ function loadConfig() {
 const configEnv = loadConfig();
 
 export const config = {
-    "redis": configEnv.get("redis") as redis.ClientOpts,
+    "redis": configEnv.get("redis") as import("ioredis").RedisOptions,
     "port": configEnv.get("port") as number,
 };

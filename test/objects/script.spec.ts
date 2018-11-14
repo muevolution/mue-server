@@ -109,9 +109,9 @@ describe("Script", () => {
             expect(actual).to.not.exist;
         });
 
-        it("#updateCode() should update the set code", () => {
+        it("#updateCode() should update the set code", async () => {
             const setActual = testScript.updateCode(testCode);
-            expect(setActual).to.be.fulfilled;
+            await expect(setActual).to.eventually.be.fulfilled;
 
             const getActual = testScript.compiled;
             expect(getActual).to.exist.and.have.property("code").include(testCode);

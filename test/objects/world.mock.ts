@@ -1,11 +1,11 @@
 import { World } from "../../src/objects";
-import { RedisConnection } from "../../src/redis";
+import { MockRedisConnection } from "../redis.mock";
 
 // The mock will be a room for integration sake, but not override anything that doesn't need to be mocked
 
 export class MockWorld extends World {
-    constructor(opts: {
-        redisConnection: RedisConnection
+    constructor(protected opts: {
+        redisConnection: MockRedisConnection
     }) {
         super(opts);
     }

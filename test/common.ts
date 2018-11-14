@@ -2,18 +2,20 @@ import { initLogger } from "../src/logging";
 import { Action, Item, Player, Room, RootFields, Script, World } from "../src/objects";
 import { RedisConnection } from "../src/redis";
 import { MockGameObject } from "./objects/gameobject.mock";
+import { MockWorld } from "./objects/world.mock";
+import { MockRedisConnection } from "./redis.mock";
 
 export function init() {
     initLogger();
-    const redis = RedisConnection.connect();
-    const world = new World({ "redisConnection": redis });
+    const redis = MockRedisConnection.connect();
+    const world = new MockWorld({ "redisConnection": redis });
 
     return { redis, world };
 }
 
 export async function beforeTestGroup(redis: RedisConnection, world: World) {
     // Start from scratch
-    await redis.client.flushdbAsync();
+    await redis.client.flushdb();
 
     // Bring up the world
     await world.init();

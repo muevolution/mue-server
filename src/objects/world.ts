@@ -6,7 +6,7 @@ import { generateId } from "../common";
 import { WorldNotInitError, WorldShutdownError } from "../errors";
 import { Logger } from "../logging";
 import { InteriorMessage } from "../netmodels";
-import { AsyncRedisClient, RedisConnection } from "../redis";
+import { RedisConnection } from "../redis";
 import { Storage } from "../storage";
 import { Action } from "./action";
 import { GameObject } from "./gameobject";
@@ -21,7 +21,7 @@ export class World {
     protected hasShutdown: boolean = false;
     protected worldInstanceId: string;
     protected cmdproc = new CommandProcessor(this);
-    protected isc: AsyncRedisClient;
+    protected isc: RedisConnection;
 
     constructor(protected opts: {
         redisConnection: RedisConnection
@@ -53,10 +53,10 @@ export class World {
         Logger.info(`World ${this.worldInstanceId} shutting down server upon request`);
 
         if (this.isc) {
-            await this.isc.quitAsync();
+            await this.isc.client.quit();
         }
 
-        await this.opts.redisConnection.client.quitAsync();
+        await this.opts.redisConnection.client.quit();
     }
 
     public get storage(): Storage {
@@ -91,8 +91,8 @@ export class World {
             return false;
         }
 
-        Logger.debug(`World ${this.worldInstanceId} publishing message to [${channel}]`, outboundMessage);
-        await this.opts.redisConnection.client.publishAsync(channel, JSON.stringify(outboundMessage));
+        Logger.debug(`World ${this.worldInstanceId} publishing message to [${channel}]`, { outboundMessage });
+        await this.opts.redisConnection.client.publish(channel, JSON.stringify(outboundMessage));
         return true;
     }
 
@@ -206,14 +206,14 @@ export class World {
     public async getActiveRoomIds(): Promise<string[]> {
         this.stateEnforce();
 
-        const rooms = await this.opts.redisConnection.client.pubsubAsync("channels", "c:r:*");
+        const rooms = await this.opts.redisConnection.channels("c:r:*");
         return _.map(rooms, (ch) => ch.substring(2));
     }
 
     public async getConnectedPlayerIds(): Promise<string[]> {
         this.stateEnforce();
 
-        const players = await this.opts.redisConnection.client.pubsubAsync("channels", "c:p:*");
+        const players = await this.opts.redisConnection.channels("c:p:*");
         return _.map(players, (ch) => ch.substring(2));
     }
 
@@ -224,17 +224,17 @@ export class World {
     private async configureInterServer() {
         this.stateEnforce();
 
-        this.isc = this.opts.redisConnection.client.duplicate();
+        this.isc = this.opts.redisConnection.duplicate();
         await this.sendInterServer("joined", {"instance": this.worldInstanceId});
-        await this.isc.subscribeAsync("c:isc");
+        await this.isc.client.subscribe("c:isc");
 
         // TODO: Move the handler elsewhere
-        this.isc.on("message", async (channel, message) => {
+        this.isc.client.on("message", async (channel: string, message: string) => {
             const msg = JSON.parse(message) as InterServerMessage;
             if (msg.event === "joined") {
                 Logger.info(`ISC> [${this.worldInstanceId}] New server joined cluster: ${msg.meta.instance}`);
             } else if (msg.event === "invalidate_script") {
-                Logger.info("ISC> [${this.worldInstanceId}] Script cache invalidated was requested by ${msg.meta.instance}");
+                Logger.info(`ISC> [${this.worldInstanceId}] Script cache invalidated was requested by ${msg.meta.instance}`);
                 Script.invalidateCache();
             }
         });
@@ -242,7 +242,7 @@ export class World {
 
     private async sendInterServer(event: InterServerMessage["event"], meta?: InterServerMessage["meta"]) {
         this.stateEnforce();
-        return this.opts.redisConnection.client.publishAsync("c:isc", JSON.stringify({event, meta} as InterServerMessage));
+        return this.opts.redisConnection.client.publish("c:isc", JSON.stringify({event, meta} as InterServerMessage));
     }
 
     private stateEnforce(): void {

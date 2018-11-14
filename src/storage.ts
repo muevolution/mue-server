@@ -1,12 +1,11 @@
 // tslint:disable:member-ordering
 
 import * as _ from "lodash";
-import { Multi } from "redis";
 
 import { generateId } from "./common";
 import { GameObjectIdExistsError, InvalidGameObjectNameError, PlayerNameAlreadyExistsError } from "./errors";
 import { GameObject, GameObjectTypes, MetaData, RootFields, splitExtendedId } from "./objects";
-import { AsyncRedisClient, RedisConnection } from "./redis";
+import { RedisConnection } from "./redis";
 
 export type PropValues = string | number | Array<string | number>;
 export interface PropStructure {
@@ -55,7 +54,7 @@ export class Storage {
         return `i:root`;
     }
 
-    private client: AsyncRedisClient;
+    private client: import ("ioredis").Redis;
 
     constructor(private redis: RedisConnection) {
         this.client = redis.client;
@@ -73,7 +72,7 @@ export class Storage {
         }
 
         // Check if the key is in use
-        const isInUse = await this.client.sismemberAsync(Storage.getObjectKeyStructure(object), object.id);
+        const isInUse = await this.client.sismember(Storage.getObjectKeyStructure(object), object.id);
         if (isInUse === 1) {
             throw new GameObjectIdExistsError(object.id, object.type);
         }
@@ -133,11 +132,12 @@ export class Storage {
     }
 
     getAllPlayers(): Promise<{[name: string]: string}> {
-        return this.client.hgetallAsync(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER));
+        const result = this.client.hgetall(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER));
+        return this.valueOrNull(result);
     }
 
     findPlayerByName(name: string): Promise<string> {
-        return this.client.hgetAsync(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER), name.toLowerCase());
+        return this.client.hget(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER), name.toLowerCase());
     }
 
     async updatePlayerNameIndex(oldName: string, object: GameObject): Promise<boolean> {
@@ -149,13 +149,13 @@ export class Storage {
     }
 
     async getProp(owner: GameObject | string, path: string): Promise<PropValues> {
-        const prop = await this.client.hgetAsync(Storage.getPropKeyStructure(owner), path);
+        const prop = await this.client.hget(Storage.getPropKeyStructure(owner), path);
         const deserialized = JSON.parse(prop);
         return deserialized;
     }
 
     async getProps(owner: GameObject | string): Promise<PropStructure> {
-        const props = await this.client.hgetallAsync(Storage.getPropKeyStructure(owner));
+        const props = await this.client.hgetall(Storage.getPropKeyStructure(owner));
         const deserialized = _.mapValues(props, (v, k) => JSON.parse(v));
         return deserialized || {};
     }
@@ -163,9 +163,9 @@ export class Storage {
     async setProp(owner: GameObject | string, path: string, value: PropValues): Promise<boolean> {
         const serialized = JSON.stringify(value);
         if (value) {
-            await this.client.hsetAsync(Storage.getPropKeyStructure(owner), path, serialized);
+            await this.client.hset(Storage.getPropKeyStructure(owner), path, serialized);
         } else {
-            await this.client.hdelAsync(Storage.getPropKeyStructure(owner), path);
+            await this.client.hdel(Storage.getPropKeyStructure(owner), path);
         }
         return true;
     }
@@ -183,7 +183,7 @@ export class Storage {
     }
 
     async getContents(owner: GameObject | string, type?: GameObjectTypes): Promise<string[]> {
-        const contents = await this.client.smembersAsync(Storage.getContentsKeyStructure(owner));
+        const contents = await this.client.smembers(Storage.getContentsKeyStructure(owner));
         if (!type) {
             return contents;
         }
@@ -212,7 +212,7 @@ export class Storage {
     }
 
     // Calling this without writeMeta is only useful for locations, parent is always only in meta
-    private reparentMoveInMulti(multi: Multi, type: "parent" | "location", object: GameObject | string, newOwner: GameObject | string, oldOwner?: GameObject | string, writeMeta: boolean = true) {
+    private reparentMoveInMulti(multi: import ("ioredis").Pipeline, type: "parent" | "location", object: GameObject | string, newOwner: GameObject | string, oldOwner?: GameObject | string, writeMeta: boolean = true) {
         if (!newOwner) {
             return false;
         }
@@ -236,13 +236,14 @@ export class Storage {
         }
     }
 
-    getMeta<MD extends MetaData>(object: GameObject<MD> | string): Promise<MD>;
-    getMeta<MD extends MetaData, KD extends keyof MetaData>(object: GameObject<MD> | string, key: KD): Promise<string>;
-    getMeta<MD extends MetaData, KD extends keyof MetaData>(object: GameObject<MD> | string, key?: KD): Promise<string | MD> {
+    async getMeta<MD extends MetaData>(object: GameObject<MD> | string): Promise<MD>;
+    async getMeta<MD extends MetaData, KD extends keyof MetaData>(object: GameObject<MD> | string, key: KD): Promise<string>;
+    async getMeta<MD extends MetaData, KD extends keyof MetaData>(object: GameObject<MD> | string, key?: KD): Promise<string | MD> {
         if (key) {
-            return this.client.hgetAsync(Storage.getMetaKeyStructure(object), key);
+            return this.client.hget(Storage.getMetaKeyStructure(object), key);
         } else {
-            return this.client.hgetallAsync(Storage.getMetaKeyStructure(object)) as Promise<any> as Promise<MD>;
+            const result = await this.client.hgetall(Storage.getMetaKeyStructure(object));
+            return result && _.size(result) > 0 ? result : null;
         }
     }
 
@@ -253,22 +254,23 @@ export class Storage {
         if (typeof meta === "object") {
             await this.redis.multiWrap((multi) => this.updateHashInMulti(multi, key, meta));
         } else {
-            await this.client.hsetAsync(key, meta.toString(), value);
+            await this.client.hset(key, meta.toString(), value);
         }
 
         return true;
     }
 
     getRootValue(field: RootFields): Promise<string> {
-        return this.client.hgetAsync(Storage.getRootKey(), field);
+        const result = this.client.hget(Storage.getRootKey(), field);
+        return this.valueOrNull(result);
     }
 
     async setRootValue(field: RootFields, value: string): Promise<boolean> {
-        await this.client.hsetAsync(Storage.getRootKey(), field, value);
+        await this.client.hset(Storage.getRootKey(), field, value);
         return true;
     }
 
-    private updateHashInMulti(multi: Multi, key: string, value: {[key: string]: string}) {
+    private updateHashInMulti(multi: import ("ioredis").Pipeline, key: string, value: {[key: string]: string}) {
         _.forEach(value, (v, k) => {
             if (v !== undefined && v !== null) {
                 multi.hset(key, k, v);
@@ -279,11 +281,17 @@ export class Storage {
     }
 
     async getScriptCode(object: GameObject | string): Promise<string> {
-        return this.client.getAsync(Storage.getScriptKeyStructure(object));
+        return this.client.get(Storage.getScriptKeyStructure(object));
     }
 
     async setScriptCode(object: GameObject | string, code: string): Promise<boolean> {
-        await this.client.setAsync(Storage.getScriptKeyStructure(object), code);
+        await this.client.set(Storage.getScriptKeyStructure(object), code);
         return true;
+    }
+
+    private valueOrNull<T extends object | string | null | undefined>(value: T): T | null;
+    private async valueOrNull<T extends object | string | null | undefined>(value: Promise<T>): Promise<T | null> {
+        const iValue = await value;
+        return _.size(iValue) > 0 ? iValue : null;
     }
 }

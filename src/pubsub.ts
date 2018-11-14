@@ -11,23 +11,33 @@ import * as formatter from "./formatter";
 import { FormattedMessage } from "./formatter";
 import { InteriorMessage } from "./netmodels";
 import { ObjectMoveEvent, Player, PlayerMessage, World } from "./objects";
-import { AsyncRedisClient } from "./redis";
+import { RedisConnection } from "./redis";
 
 export class PubSub {
     private _player: Player;
-    private client: AsyncRedisClient;
+    private baseclient: import ("ioredis").Redis;
+    private client: import ("ioredis").Redis;
+    private connected: boolean;
     private tsock: TypedEmitter<ServerToClient, ClientToServer>;
     private tupdater: BaseTypedEmitter<PlayerMessage, PlayerMessage>;
     private boundPlayerMoveEvent: (...args: any[]) => void;
     private boundPlayerQuitEvent: (...args: any[]) => void;
 
     constructor(
-        private baseclient: AsyncRedisClient,
+        baseclient: RedisConnection,
         private socket: SocketIO.Socket,
         private world: World
     ) {
-        this.client = baseclient.duplicate();
-        this.tsock = new TypedEmitter(socket, baseclient);
+        this.baseclient = baseclient.client;
+        this.client = baseclient.duplicate().client;
+        this.client.on("ready", () => {
+            this.connected = true;
+        });
+        this.client.on("end", () => {
+            this.connected = false;
+        });
+
+        this.tsock = new TypedEmitter(socket, this.baseclient);
 
         this.boundPlayerMoveEvent = this.playerMoveEvent.bind(this);
         this.boundPlayerQuitEvent = this.quit.bind(this);
@@ -40,7 +50,7 @@ export class PubSub {
     subscribe(player: Player, ...channels: string[]) {
         this._player = player;
         this.tupdater = new BaseTypedEmitter(player, this.baseclient);
-        const result = this.client.subscribeAsync(channels);
+        const result = this.client.subscribe(channels);
         if (!result) {
             return false;
         }
@@ -63,7 +73,7 @@ export class PubSub {
             this.socket.disconnect();
         }
 
-        if (this.client.connected) {
+        if (this.connected) {
             this.client.quit();
         }
     }
@@ -143,15 +153,15 @@ export class PubSub {
     }
 
     private async playerMoveEvent(e: ObjectMoveEvent) {
-        if (!this.client.connected) {
+        if (!this.connected) {
             return;
         }
 
         if (e.oldLocation) {
-            await this.client.unsubscribeAsync(`c:${e.oldLocation.id}`);
+            await this.client.unsubscribe(`c:${e.oldLocation.id}`);
         }
 
-        await this.client.subscribeAsync(`c:${e.newLocation.id}`);
+        await this.client.subscribe(`c:${e.newLocation.id}`);
     }
 
     private async getLocalMessage(msg: InteriorMessage): Promise<FormattedMessage & {format: string}> {

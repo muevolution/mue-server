@@ -1,13 +1,14 @@
+import * as bluebird from "bluebird";
 import * as chai from "chai";
 import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist, WorldNotInitError, WorldShutdownError } from "../../src/errors";
-import { initLogger, Logger } from "../../src/logging";
+import { initLogger } from "../../src/logging";
 import { InteriorMessage } from "../../src/netmodels";
 import { Action, GameObjectTypes, Item, Player, Room, Script } from "../../src/objects";
-import { RedisConnection } from "../../src/redis";
 import { beforeTestGroup, objectCreator } from "../common";
+import { MockRedisConnection } from "../redis.mock";
 import { MockWorld } from "./world.mock";
 
 initLogger();
@@ -18,11 +19,9 @@ chai.use(chaiAsPromised);
 type MonitorExpectFunc = (args: string[], raw?: string) => boolean;
 type MonitorExpectation = string | MonitorExpectFunc;
 
-describe("World", function() {
-    this.timeout(10000);
-
+describe("World", () => {
     async function createWorld(): Promise<MockWorld> {
-        const redis = RedisConnection.connect();
+        const redis = MockRedisConnection.connect();
 
         return new MockWorld({ "redisConnection": redis });
     }
@@ -33,34 +32,35 @@ describe("World", function() {
         return world;
     }
 
-    async function createMonitor(world: MockWorld, expected: MonitorExpectation) {
+    async function createMonitor(world: MockWorld, expected: MonitorExpectation, timeout: number = 10000) {
         // Enable monitor mode for these tests
-        const result = await world.redis.client.monitorAsync();
-        if (result !== "OK") {
+        const result = await world.redis.client.monitor();
+        if (!result) {
             throw new Error("Unable to create monitor: " + result);
         }
 
         return {
-            "monitor": new Promise<string[]>((resolve, reject) => {
-                Logger.debug("createMonitor", expected);
-                const listener = (time: string, args: string[], raw_reply: string) => {
-                    Logger.debug("Redis Monitor", time, args, raw_reply);
+            "monitor": new bluebird<string[]>((resolve, reject) => {
+                // Logger.debug("createMonitor", { expected });
+                const listener = (time: string, args: string[]) => {
+                    const raw_reply = args.join(" ");
+                    // Logger.debug("Redis Monitor", { time, args, raw_reply });
                     if (
                         (typeof expected === "string" && raw_reply.indexOf(expected) > -1) ||
                         (typeof expected === "function" && expected(args, raw_reply))
                     ) {
-                        Logger.debug(`Matched [${expected}] for [${args}]`);
+                        // Logger.debug(`Matched [${expected}] for [${args}]`);
                         resolve(args);
-                        world.redis.client.removeListener("monitor", listener);
+                        result.removeListener("monitor", listener);
                     }
                 };
 
-                world.redis.client.on("monitor", listener);
-            })
+                result.on("monitor", listener);
+            }).timeout(timeout)
         };
     }
 
-    function createEndPromise(redis: RedisConnection) {
+    function createEndPromise(redis: MockRedisConnection) {
         return new Promise((resolve, reject) => {
             redis.client.on("end", () => {
                 resolve();
@@ -76,9 +76,9 @@ describe("World", function() {
 
     before(async () => {
         // Start from scratch
-        const redis = RedisConnection.connect();
-        await redis.client.flushdbAsync();
-        await redis.client.quitAsync();
+        const redis = MockRedisConnection.connect();
+        await redis.client.flushdb();
+        await redis.client.quit();
     });
 
     // Actual methods
@@ -150,7 +150,7 @@ describe("World", function() {
 
             const actual = world.publishMessage("Hello world");
             await expect(actual).to.eventually.be.true;
-            await expect(monitor).to.fulfilled;
+            await expect(monitor).to.eventually.be.fulfilled;
         });
 
         it("should publish a plain message to a target", async () => {
@@ -160,7 +160,7 @@ describe("World", function() {
 
             const actual = world.publishMessage("Hello item", item);
             await expect(actual).to.eventually.be.true;
-            await expect(monitor).to.fulfilled;
+            await expect(monitor).to.eventually.be.fulfilled;
         });
 
         it("should publish an interior message to the world", async () => {
@@ -174,7 +174,7 @@ describe("World", function() {
                 }
             } as InteriorMessage);
             await expect(actual).to.eventually.be.true;
-            await expect(monitor).to.fulfilled;
+            await expect(monitor).to.eventually.be.fulfilled;
         });
 
         it("should publish an interior message to a target", async () => {
@@ -190,7 +190,7 @@ describe("World", function() {
                 }
             } as InteriorMessage, item);
             await expect(actual).to.eventually.be.true;
-            await expect(monitor).to.fulfilled;
+            await expect(monitor).to.eventually.be.fulfilled;
         });
 
         it("should fail if server has not been initialized", async () => {
@@ -271,7 +271,7 @@ describe("World", function() {
 
         it("should not find a player that doesn't exist", async () => {
             const actual = world.getPlayerById("p:invalid");
-            expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
 
         it("should fail if server has not been initialized", async () => {
@@ -312,8 +312,8 @@ describe("World", function() {
         });
 
         it("should not find a player that doesn't exist", async () => {
-            const actual = world.getPlayerByName("invalid");
-            expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            const actual = await world.getPlayerByName("invalid");
+            await expect(actual).to.be.null;
         });
 
         it("should fail if server has not been initialized", async () => {
@@ -355,7 +355,7 @@ describe("World", function() {
 
         it("should not find a room that doesn't exist", async () => {
             const actual = world.getRoomById("r:invalid");
-            expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
 
         it("should fail if server has not been initialized", async () => {
@@ -426,7 +426,7 @@ describe("World", function() {
 
         it("should not find a item that doesn't exist", async () => {
             const actual = world.getItemById("i:invalid");
-            expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
 
         it("should fail if server has not been initialized", async () => {
@@ -468,7 +468,7 @@ describe("World", function() {
 
         it("should not find a script that doesn't exist", async () => {
             const actual = world.getScriptById("s:invalid");
-            expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
 
         it("should fail if server has not been initialized", async () => {
@@ -510,7 +510,7 @@ describe("World", function() {
 
         it("should not find a script that doesn't exist", async () => {
             const actual = world.getActionById("a:invalid");
-            expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
+            await expect(actual).to.be.rejectedWith(GameObjectIdDoesNotExist);
         });
 
         it("should fail if server has not been initialized", async () => {
@@ -654,7 +654,7 @@ describe("World", function() {
             const ids = Promise.resolve([rootPlayer.id, rootRoom.id]);
             const actual = world.getObjectsByIds(ids, GameObjectTypes.PLAYER);
 
-            expect(actual).to.be.rejected;
+            await expect(actual).to.be.rejected;
         });
     });
 

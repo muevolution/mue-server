@@ -5,13 +5,12 @@ import * as util from "util";
 
 import { MessageEvent } from "../client_types";
 import { Logger } from "./logging";
-import { AsyncRedisClient } from "./redis";
 
 export function generateId(): string {
     return shortid.generate().toLowerCase().replace("_", "a").replace("-", "b");
 }
 
-export function RedisClientDebug(client: AsyncRedisClient, msg: {}) {
+export function RedisClientDebug(client: import ("ioredis").Redis, msg: {}) {
     // TODO: Add debug toggle
     if (!client) { return; }
     client.publish("c:debug", util.inspect(msg), (err, reply) => {
@@ -25,7 +24,7 @@ interface CompatibleEmitter {
 }
 
 export class BaseTypedEmitter<O, I> {
-    constructor(protected socket: CompatibleEmitter, protected redisClient?: AsyncRedisClient) {}
+    constructor(protected socket: CompatibleEmitter, protected redisClient?: import ("ioredis").Redis) {}
 
     public emit<T extends Extract<keyof O, string>, K extends O[T]>(event: T, data: K) {
         RedisClientDebug(this.redisClient, {"type": "outbound", event, data});

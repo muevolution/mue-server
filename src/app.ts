@@ -57,7 +57,7 @@ app.get("/rooms/:roomId", async (req, res) => {
 const io = socketio(server);
 io.on("connection", (socket) => {
     Logger.debug("Got a connection");
-    const ps = new PubSub(redis.client, socket, world);
+    const ps = new PubSub(redis, socket, world);
     ps.init();
 });
 

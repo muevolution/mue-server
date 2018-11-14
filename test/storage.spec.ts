@@ -25,8 +25,8 @@ describe("Storage", () => {
     before(async () => {
         // Start from scratch
         const redis2 = RedisConnection.connect();
-        await redis2.client.flushdbAsync();
-        await redis2.client.quitAsync();
+        await redis2.client.flushdb();
+        await redis2.client.quit();
 
         // Begin regular init
         const results = await beforeTestGroup(redis, world);
@@ -69,11 +69,11 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Meta should be set
-            const redisMetaActual = await redis.client.hgetallAsync(`s:i:${id}:meta`);
+            const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
             expect(redisMetaActual).to.deep.equal(meta);
 
             // Redis: Should be in master item list
-            const redisObjListActual = await redis.client.smembersAsync("i:i:all");
+            const redisObjListActual = await redis.client.smembers("i:i:all");
             expect(redisObjListActual).to.contain(`i:${id}`);
 
             // API: Should be in location container
@@ -97,11 +97,11 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Meta should be set
-            const redisMetaActual = await redis.client.hgetallAsync(`s:i:${id}:meta`);
+            const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
             expect(redisMetaActual).to.deep.equal(meta);
 
             // Redis: Should be in master item list
-            const redisObjListActual = await redis.client.smembersAsync("i:i:all");
+            const redisObjListActual = await redis.client.smembers("i:i:all");
             expect(redisObjListActual).to.contain(`i:${id}`);
         });
 
@@ -120,11 +120,11 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Meta should be set
-            const redisMetaActual = await redis.client.hgetallAsync(`s:i:${id}:meta`);
+            const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
             expect(redisMetaActual).to.deep.equal(meta);
 
             // Redis: Should be in master item list
-            const redisObjListActual = await redis.client.smembersAsync("i:i:all");
+            const redisObjListActual = await redis.client.smembers("i:i:all");
             expect(redisObjListActual).to.contain(`i:${id}`);
         });
 
@@ -142,11 +142,11 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Meta should be set
-            const redisMetaActual = await redis.client.hgetallAsync(`s:i:${id}:meta`);
+            const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
             expect(redisMetaActual).to.deep.equal(meta);
 
             // Redis: Should be in master item list
-            const redisObjListActual = await redis.client.smembersAsync("i:i:all");
+            const redisObjListActual = await redis.client.smembers("i:i:all");
             expect(redisObjListActual).to.contain(`i:${id}`);
         });
 
@@ -166,11 +166,11 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Meta should be set
-            const redisMetaActual = await redis.client.hgetallAsync(`s:i:${id}:meta`);
+            const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
             expect(redisMetaActual).to.deep.equal(meta);
 
             // Redis: Should be in master item list
-            const redisObjListActual = await redis.client.smembersAsync("i:i:all");
+            const redisObjListActual = await redis.client.smembers("i:i:all");
             expect(redisObjListActual).to.contain(`i:${id}`);
 
             // API: Should be in location container
@@ -193,11 +193,11 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Meta should be set
-            const redisMetaActual = await redis.client.hgetallAsync(`s:i:${id}:meta`);
+            const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
             expect(redisMetaActual).to.deep.equal(meta);
 
             // Redis: Should be in master item list
-            const redisObjListActual = await redis.client.smembersAsync("i:i:all");
+            const redisObjListActual = await redis.client.smembers("i:i:all");
             expect(redisObjListActual).to.contain(`i:${id}`);
 
             // API: Should be in location container
@@ -218,11 +218,11 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Meta should be set
-            const redisMetaActual = await redis.client.hgetallAsync(`s:i:${id}:meta`);
+            const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
             expect(redisMetaActual).to.deep.equal(meta);
 
             // Redis: Should be in master item list
-            const redisObjListActual = await redis.client.smembersAsync("i:i:all");
+            const redisObjListActual = await redis.client.smembers("i:i:all");
             expect(redisObjListActual).to.contain(`i:${id}`);
         });
 
@@ -267,7 +267,7 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Player name should be in list
-            const redisMetaActual = await redis.client.hgetAsync(`i:p:names`, "tiao10");
+            const redisMetaActual = await redis.client.hget(`i:p:names`, "tiao10");
             expect(redisMetaActual).to.equal(testPlayer.id);
         });
 
@@ -295,32 +295,32 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: All keys should no longer exist
-            const redisPropKeyActual = await redis.client.existsAsync(`s:${obj.id}:props`);
+            const redisPropKeyActual = await redis.client.exists(`s:${obj.id}:props`);
             expect(redisPropKeyActual).to.equal(0);
 
-            const redisContentKeyActual = await redis.client.existsAsync(`s:${obj.id}:contents`);
+            const redisContentKeyActual = await redis.client.exists(`s:${obj.id}:contents`);
             expect(redisContentKeyActual).to.equal(0);
 
-            const redisMetaKeyActual = await redis.client.existsAsync(`s:${obj.id}:meta`);
+            const redisMetaKeyActual = await redis.client.exists(`s:${obj.id}:meta`);
             expect(redisMetaKeyActual).to.equal(0);
 
             // Redis: Players should be removed from the name index
             if (isPlayer) {
-                const redisGlobalPlayerListActual = await redis.client.hexistsAsync(`i:p:names`, obj.name);
+                const redisGlobalPlayerListActual = await redis.client.hexists(`i:p:names`, obj.name);
                 expect(redisGlobalPlayerListActual).to.equal(0);
             }
 
             // Redis: Scripts should have their source removed
             if (isScript) {
-                const redisScriptKeyActual = await redis.client.existsAsync(`s:s:script`);
+                const redisScriptKeyActual = await redis.client.exists(`s:s:script`);
                 expect(redisScriptKeyActual).to.equal(0);
             }
 
             // Redis: All values should no longer exist in their parent lists
-            const redisGlobalObjectKeyActual = await redis.client.sismemberAsync(`i:${obj.type}:all`, obj.id);
+            const redisGlobalObjectKeyActual = await redis.client.sismember(`i:${obj.type}:all`, obj.id);
             expect(redisGlobalObjectKeyActual).to.equal(0);
 
-            const redisParentContentKeyActual = await redis.client.sismemberAsync(`s:${obj.location}:contents`, obj.id);
+            const redisParentContentKeyActual = await redis.client.sismember(`s:${obj.location}:contents`, obj.id);
             expect(redisParentContentKeyActual).to.equal(0);
         }
 
@@ -403,10 +403,10 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Should return expected value
-            const redisOldActual = await redis.client.hgetAsync("i:p:names", "updaterplayernametestabc");
+            const redisOldActual = await redis.client.hget("i:p:names", "updaterplayernametestabc");
             expect(redisOldActual).to.equal(null);
 
-            const redisNewActual = await redis.client.hgetAsync("i:p:names", "updaterplayernametestxyz");
+            const redisNewActual = await redis.client.hget("i:p:names", "updaterplayernametestxyz");
             expect(redisNewActual).to.equal(testPlayer.id);
         });
     });
@@ -422,7 +422,7 @@ describe("Storage", () => {
             const actual = await storage.getProp(testObj, "testpath");
             expect(actual).to.be.null;
 
-            const getRedisActual = await redis.client.hgetAsync(`s:${testObj.id}:props`, "testpath");
+            const getRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testpath");
             expect(getRedisActual).to.be.null;
         });
 
@@ -430,8 +430,8 @@ describe("Storage", () => {
             const actual = await storage.getProps(testObj);
             expect(actual).to.be.a("object").and.deep.equal({});
 
-            const getRedisActual = await redis.client.hgetallAsync(`s:${testObj.id}:props`);
-            expect(getRedisActual).to.be.null;
+            const getRedisActual = await redis.client.hgetall(`s:${testObj.id}:props`);
+            expect(getRedisActual).to.be.empty;
         });
 
         it("#setProp() and #getProp() should handle string properties", async () => {
@@ -441,7 +441,7 @@ describe("Storage", () => {
             const getActual = await storage.getProp(testObj, "teststrprop");
             expect(getActual).to.be.a("string").and.equal("teststr");
 
-            const getRedisActual = await redis.client.hgetAsync(`s:${testObj.id}:props`, "teststrprop");
+            const getRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "teststrprop");
             expect(getRedisActual).to.equal(`"teststr"`);
         });
 
@@ -452,7 +452,7 @@ describe("Storage", () => {
             const getActual = await storage.getProp(testObj, "testnumprop");
             expect(getActual).to.be.a("number").and.equal(2299);
 
-            const getRedisActual = await redis.client.hgetAsync(`s:${testObj.id}:props`, "testnumprop");
+            const getRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testnumprop");
             expect(getRedisActual).to.equal("2299");
         });
 
@@ -463,7 +463,7 @@ describe("Storage", () => {
             const getActual = await storage.getProp(testObj, "testarrprop");
             expect(getActual).to.be.an("array").and.deep.equal(["a", 123]);
 
-            const getRedisActual = await redis.client.hgetAsync(`s:${testObj.id}:props`, "testarrprop");
+            const getRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testarrprop");
             expect(getRedisActual).to.equal(`["a",123]`);
         });
 
@@ -471,7 +471,7 @@ describe("Storage", () => {
             const setActual = await storage.setProp(testObj, "testempty", "a");
             expect(setActual).to.be.true;
 
-            const setRedisActual = await redis.client.hgetAsync(`s:${testObj.id}:props`, "testempty");
+            const setRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testempty");
             expect(setRedisActual).to.equal(`"a"`);
 
             const unsetActual = await storage.setProp(testObj, "testempty", null);
@@ -480,7 +480,7 @@ describe("Storage", () => {
             const getActual = await storage.getProp(testObj, "testempty");
             expect(getActual).to.be.null;
 
-            const getRedisActual = await redis.client.hgetAsync(`s:${testObj.id}:props`, "testempty");
+            const getRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testempty");
             expect(getRedisActual).to.be.null;
         });
 
@@ -510,7 +510,7 @@ describe("Storage", () => {
             const getUnsetActual = await storage.getProp(testObj, "testarrprop");
             expect(getUnsetActual).to.be.null;
 
-            const getRedisActual = await redis.client.hgetallAsync(`s:${testObj.id}:props`);
+            const getRedisActual = await redis.client.hgetall(`s:${testObj.id}:props`);
             expect(getRedisActual).to.deep.equal({
                 "teststrprop": "361666",
                 "newprop": `"newval"`
@@ -537,7 +537,7 @@ describe("Storage", () => {
             expect(contents).to.be.an("array").and.have.lengthOf(0);
 
             // Redis: Contents should be null
-            const redisActual = await redis.client.smembersAsync(`s:${testItem.id}:contents`);
+            const redisActual = await redis.client.smembers(`s:${testItem.id}:contents`);
             expect(redisActual).to.be.an("array").and.have.lengthOf(0);
         });
 
@@ -559,7 +559,7 @@ describe("Storage", () => {
             expect(contents).to.be.an("array").and.have.members([item2.id]);
 
             // Redis: Contents should not include item ID
-            const redisActual = await redis.client.smembersAsync(`s:${testItem.id}:contents`);
+            const redisActual = await redis.client.smembers(`s:${testItem.id}:contents`);
             expect(redisActual).to.not.contain(item.id);
         });
 
@@ -593,7 +593,7 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Ensure item's parent is set correctly
-            const redisActual = await redis.client.hgetAsync(`s:${testItem.id}:meta`, "parent");
+            const redisActual = await redis.client.hget(`s:${testItem.id}:meta`, "parent");
             expect(redisActual).to.equal(testRoom.id);
         });
     });
@@ -608,13 +608,13 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Ensure item's parent is set correctly
-            const redisActual = await redis.client.hgetAsync(`s:${testItem.id}:meta`, "location");
+            const redisActual = await redis.client.hget(`s:${testItem.id}:meta`, "location");
             expect(redisActual).to.equal(testRoom.id);
 
-            const redisOldContainerActual = await redis.client.sismemberAsync(`s:${playerRoom.id}:contents`, testItem.id);
+            const redisOldContainerActual = await redis.client.sismember(`s:${playerRoom.id}:contents`, testItem.id);
             expect(redisOldContainerActual).to.equal(0);
 
-            const redisNewContainerActual = await redis.client.sismemberAsync(`s:${testRoom.id}:contents`, testItem.id);
+            const redisNewContainerActual = await redis.client.sismember(`s:${testRoom.id}:contents`, testItem.id);
             expect(redisNewContainerActual).to.equal(1);
         });
     });
@@ -630,22 +630,22 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Ensure item's parent is set correctly
-            const redisActual1 = await redis.client.hgetAsync(`s:${testItem1.id}:meta`, "location");
+            const redisActual1 = await redis.client.hget(`s:${testItem1.id}:meta`, "location");
             expect(redisActual1).to.equal(testRoom.id);
 
-            const redisOldContainerActual1 = await redis.client.sismemberAsync(`s:${playerRoom.id}:contents`, testItem1.id);
+            const redisOldContainerActual1 = await redis.client.sismember(`s:${playerRoom.id}:contents`, testItem1.id);
             expect(redisOldContainerActual1).to.equal(0);
 
-            const redisNewContainerActual1 = await redis.client.sismemberAsync(`s:${testRoom.id}:contents`, testItem1.id);
+            const redisNewContainerActual1 = await redis.client.sismember(`s:${testRoom.id}:contents`, testItem1.id);
             expect(redisNewContainerActual1).to.equal(1);
 
-            const redisActual2 = await redis.client.hgetAsync(`s:${testItem2.id}:meta`, "location");
+            const redisActual2 = await redis.client.hget(`s:${testItem2.id}:meta`, "location");
             expect(redisActual2).to.equal(testRoom.id);
 
-            const redisOldContainerActual2 = await redis.client.sismemberAsync(`s:${playerRoom.id}:contents`, testItem2.id);
+            const redisOldContainerActual2 = await redis.client.sismember(`s:${playerRoom.id}:contents`, testItem2.id);
             expect(redisOldContainerActual2).to.equal(0);
 
-            const redisNewContainerActual2 = await redis.client.sismemberAsync(`s:${testRoom.id}:contents`, testItem2.id);
+            const redisNewContainerActual2 = await redis.client.sismember(`s:${testRoom.id}:contents`, testItem2.id);
             expect(redisNewContainerActual2).to.equal(1);
         });
     });
@@ -677,7 +677,7 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Ensure value was set correctly
-            const redisActual = await redis.client.hgetAsync(`s:${testItem.id}:meta`, "name");
+            const redisActual = await redis.client.hget(`s:${testItem.id}:meta`, "name");
             expect(redisActual).to.equal("NewName");
         });
 
@@ -692,7 +692,7 @@ describe("Storage", () => {
             expect(actual).to.be.true;
 
             // Redis: Ensure values were set correctly
-            const redisActual = await redis.client.hgetallAsync(`s:${testItem.id}:meta`);
+            const redisActual = await redis.client.hgetall(`s:${testItem.id}:meta`);
             expect(redisActual).to.eql({
                 "name": "NewNamier",
                 "creator": "p:asdf",
@@ -714,7 +714,7 @@ describe("Storage", () => {
             expect(getActual).to.equal(testPlayer.id);
 
             // Redis: Ensure value was set correctly
-            const redisActual = await redis.client.hgetAsync("i:root", "god");
+            const redisActual = await redis.client.hget("i:root", "god");
             expect(redisActual).to.equal(testPlayer.id);
         });
     });
@@ -733,7 +733,7 @@ describe("Storage", () => {
             expect(getActual).to.equal(code);
 
             // Redis: Ensure value was set correctly
-            const redisActual = await redis.client.getAsync(`s:${testScript.id}:script`);
+            const redisActual = await redis.client.get(`s:${testScript.id}:script`);
             expect(redisActual).to.equal(code);
         });
 
@@ -745,7 +745,7 @@ describe("Storage", () => {
             expect(actual).to.be.null;
 
             // Redis: Ensure value doesn't exist
-            const redisActual = await redis.client.existsAsync(`s:${testScript.id}:script`);
+            const redisActual = await redis.client.exists(`s:${testScript.id}:script`);
             expect(redisActual).to.equal(0);
         });
 
@@ -756,7 +756,7 @@ describe("Storage", () => {
 
             // Redis: Ensure value doesn't exist
             // I'm not sure how this would ever return true... good 1=1 test I guess
-            const redisActual = await redis.client.existsAsync("s:s:invalid:script");
+            const redisActual = await redis.client.exists("s:s:invalid:script");
             expect(redisActual).to.equal(0);
         });
     });
