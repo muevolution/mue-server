@@ -1,13 +1,13 @@
-/// worldscript:say
+/// worldscript:pose
 
 const sayMessage = script.command.args.join(" ");
 const formats = {
-    "firstPerson": "You say, \"{message}\"",
-    "thirdPerson": `{speaker!name} says, \"{message}\"`
+    "firstPerson": "{actor!name} {action}",
+    "thirdPerson": `{actor!name} {action}`
 };
 const content = {
-    "message": sayMessage,
-    "speaker": script.thisPlayer
+    "action": sayMessage,
+    "actor": script.thisPlayer
 };
 
 const thisRoom = await world.getLocation(script.thisPlayer);

@@ -55,6 +55,19 @@ export class CommandProcessor {
     }
 
     private async hardcodedCommands(player: Player, command: LocalCommand): Promise<boolean> {
+        // Super special awesome hardcoded aliases
+        if (command.command.startsWith("\"")) {
+            const spl = command.command.substring(1);
+            command.command = "say";
+            command.args.unshift(spl);
+            return false;
+        } else if (command.command.startsWith(":")) {
+            const spl = command.command.substring(1);
+            command.command = "pose";
+            command.args.unshift(spl);
+            return false;
+        }
+
         // TODO: Implement hardcoded commands with decorators
         switch (command.command.toLowerCase()) {
             case "$echo":
