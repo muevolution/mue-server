@@ -1,7 +1,7 @@
 pipeline:
   npm_auth:
     image: robertstettner/drone-npm-auth
-    registry: https://drone-npm.neocodenetworks.org
+    registry: https://npm.cloud.neocodenetworks.org
     secrets: [ npm_username, npm_password, npm_email ]
 
   build:
@@ -13,12 +13,34 @@ pipeline:
   test:
     image: node:carbon-alpine
     commands:
-      - npm run test || true # Don't fail this step
-      - npm run test:upload
-    secrets: [ aws_access_key_id, aws_secret_access_key ]
+      - npm run test
     environment:
       - NODE_ENV=test
       - redis__host=redis
+
+  publish_test_report:
+    image: plugins/s3-sync:1
+    bucket: drone-test-results
+    source: ./mochawesome-report/
+    target: mue-server/${DRONE_BRANCH}/report/
+    delete: true
+    acl:
+      "*": public-read
+    path_style: true
+    secrets: [ s3_endpoint, aws_access_key_id, aws_secret_access_key ]
+    errignore: true
+
+  publish_test_cov:
+    image: plugins/s3-sync:1
+    bucket: drone-test-results
+    source: ./coverage/
+    target: mue-server/${DRONE_BRANCH}/coverage/
+    delete: true
+    acl:
+      "*": public-read
+    path_style: true
+    secrets: [ s3_endpoint, aws_access_key_id, aws_secret_access_key ]
+    errignore: true
 
   publish_npm:
     image: plugins/npm
@@ -30,8 +52,8 @@ pipeline:
 
   publish_docker_master:
     image: plugins/docker
-    registry: drone-registry.neocodenetworks.org
-    repo: drone-registry.neocodenetworks.org/mue/server
+    registry: docker.cloud.neocodenetworks.org
+    repo: docker.cloud.neocodenetworks.org/mue/server
     secrets: [ docker_username, docker_password ]
     tag: [ latest, master ]
     when:
@@ -40,8 +62,8 @@ pipeline:
 
   publish_docker_branch:
     image: plugins/docker
-    registry: drone-registry.neocodenetworks.org
-    repo: drone-registry.neocodenetworks.org/mue/server
+    registry: docker.cloud.neocodenetworks.org
+    repo: docker.cloud.neocodenetworks.org/mue/server
     secrets: [ docker_username, docker_password ]
     tag: ${DRONE_BRANCH}
     when:
@@ -51,8 +73,8 @@ pipeline:
 
   publish_docker_tag:
     image: plugins/docker
-    registry: drone-registry.neocodenetworks.org
-    repo: drone-registry.neocodenetworks.org/mue/server
+    registry: docker.cloud.neocodenetworks.org
+    repo: docker.cloud.neocodenetworks.org/mue/server
     secrets: [ docker_username, docker_password ]
     tag: ${DRONE_TAG}
     when:
@@ -60,8 +82,8 @@ pipeline:
 
   publish_docker_to_prod:
     image: plugins/docker
-    registry: drone-registry.neocodenetworks.org
-    repo: drone-registry.neocodenetworks.org/mue/server
+    registry: docker.cloud.neocodenetworks.org
+    repo: docker.cloud.neocodenetworks.org/mue/server
     secrets: [ docker_username, docker_password ]
     tag: prod
     when:
@@ -69,9 +91,10 @@ pipeline:
       environment: production
 
   notify_neopush:
-    image: drone-registry.neocodenetworks.org/neopush/drone
+    image: docker.cloud.neocodenetworks.org/neopush/drone
     pull: true
     secrets: [ neopush_api_key ]
+    errignore: true
 
 services:
   redis:

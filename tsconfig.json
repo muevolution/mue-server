@@ -16,5 +16,8 @@
                 "src/types/*"
             ]
         }
-    }
+    },
+    "exclude": [
+        "test/**"
+    ]
 }

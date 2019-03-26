@@ -74,7 +74,7 @@ export class PubSub {
         }
 
         if (this.connected) {
-            this.client.quit();
+            await this.client.quit();
         }
     }
 
