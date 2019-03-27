@@ -23,7 +23,7 @@ pipeline:
         - pull_request
 
   publish_test_report:
-    image: plugins/s3-sync:1
+    image: plugins/s3-sync
     bucket: drone-test-results
     source: ./mochawesome-report/
     target: mue-server/${DRONE_BRANCH}/report/
@@ -37,7 +37,7 @@ pipeline:
       event: push
 
   publish_test_cov:
-    image: plugins/s3-sync:1
+    image: plugins/s3-sync
     bucket: drone-test-results
     source: ./coverage/
     target: mue-server/${DRONE_BRANCH}/coverage/
