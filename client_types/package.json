@@ -4,5 +4,8 @@
   "description": "MUE Client Types",
   "author": "Kauko <kauko@biosynth.link>",
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.cloud.neocodenetworks.org"
+  },
   "types": "index.d.ts"
 }

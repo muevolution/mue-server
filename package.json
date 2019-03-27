@@ -4,6 +4,9 @@
   "description": "Multi User Evolution Server",
   "author": "Kauko <kauko@biosynth.link>",
   "license": "MIT",
+  "publishConfig": {
+    "registry": "https://npm.cloud.neocodenetworks.org"
+  },
   "main": "build/app.js",
   "scripts": {
     "start": "node build/app.js",
