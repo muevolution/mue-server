@@ -1,110 +1,189 @@
-pipeline:
-  npm_auth:
-    image: robertstettner/drone-npm-auth
-    registry: https://npm.cloud.neocodenetworks.org
-    secrets: [ npm_username, npm_password, npm_email ]
+kind: pipeline
+name: default
 
-  build:
+steps:
+  - name: build
     image: node:carbon-alpine
     commands:
       - npm install
       - npm run build
 
-  test:
+  - name: test
     image: node:carbon-alpine
     commands:
       - npm run test
     environment:
-      - NODE_ENV=test
-      - redis__host=redis
+      NODE_ENV: test
+      redis__host: redis
     when:
       event:
         - push
         - pull_request
 
-  publish_test_report:
-    image: plugins/s3-sync
-    bucket: drone-test-results
-    source: ./mochawesome-report/
-    target: mue-server/${DRONE_BRANCH}/report/
-    delete: true
-    acl:
-      "*": public-read
-    path_style: true
-    secrets: [ s3_endpoint, aws_access_key_id, aws_secret_access_key ]
-    errignore: true
-    when:
-      event: push
+  # - name: publish_test_report
+  #   image: plugins/s3-sync
+  #   pull: always
+  #   err_ignore: true
+  #   settings:
+  #     bucket: drone-test-results
+  #     source: ./mochawesome-report/
+  #     target: mue-server/${DRONE_BRANCH}/report/
+  #     delete: true
+  #     acl:
+  #       "*": public-read
+  #     path_style: true
+  #     endpoint:
+  #       from_secret: s3_endpoint
+  #     access_key:
+  #       from_secret: aws_access_key_id
+  #     secret_key:
+  #       from_secret: aws_secret_access_key
+  #   when:
+  #     event: push
 
-  publish_test_cov:
-    image: plugins/s3-sync
-    bucket: drone-test-results
-    source: ./coverage/
-    target: mue-server/${DRONE_BRANCH}/coverage/
-    delete: true
-    acl:
-      "*": public-read
-    path_style: true
-    secrets: [ s3_endpoint, aws_access_key_id, aws_secret_access_key ]
-    errignore: true
-    when:
-      event: push
+  # - name: publish_test_cov
+  #   image: plugins/s3-sync
+  #   pull: always
+  #   err_ignore: true
+  #   settings:
+  #     bucket: drone-test-results
+  #     source: ./coverage/
+  #     target: mue-server/${DRONE_BRANCH}/coverage/
+  #     delete: true
+  #     acl:
+  #       "*": public-read
+  #     path_style: true
+  #     endpoint:
+  #       from_secret: s3_endpoint
+  #     access_key:
+  #       from_secret: aws_access_key_id
+  #     secret_key:
+  #       from_secret: aws_secret_access_key
+  #   when:
+  #     event: push
 
-  publish_npm:
+  - name: publish_npm
     image: plugins/npm
-    registry: https://npm.cloud.neocodenetworks.org
-    folder: client_types
-    secrets: [ npm_username, npm_password, npm_email ]
+    settings:
+      registry: https://npm.cloud.neocodenetworks.org
+      folder: client_types
+      username:
+        from_secret: npm_username
+      password:
+        from_secret: npm_password
+      email:
+        from_secret: npm_email
     when:
       event: deployment
       environment: production-npm
 
-  publish_docker_master:
+  - name: publish_docker
     image: plugins/docker
-    registry: docker.cloud.neocodenetworks.org
-    repo: docker.cloud.neocodenetworks.org/mue/server
-    secrets: [ docker_username, docker_password ]
-    tag: [ latest, master ]
+    settings:
+      registry: docker.cloud.neocodenetworks.org
+      repo: docker.cloud.neocodenetworks.org/mue/server
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      tags:
+        - latest
+        - ${DRONE_BRANCH}
     when:
       branch: master
       event: push
 
-  publish_docker_branch:
+  - name: publish_docker_tag
     image: plugins/docker
-    registry: docker.cloud.neocodenetworks.org
-    repo: docker.cloud.neocodenetworks.org/mue/server
-    secrets: [ docker_username, docker_password ]
-    tag: ${DRONE_BRANCH}
-    when:
-      branch:
-        exclude: master
-      event: push
-
-  publish_docker_tag:
-    image: plugins/docker
-    registry: docker.cloud.neocodenetworks.org
-    repo: docker.cloud.neocodenetworks.org/mue/server
-    secrets: [ docker_username, docker_password ]
-    tag: ${DRONE_TAG}
+    settings:
+      registry: docker.cloud.neocodenetworks.org
+      repo: docker.cloud.neocodenetworks.org/mue/server
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      tags: ${DRONE_TAG}
     when:
       event: tag
 
-  publish_docker_to_prod:
+  - name: publish_docker_to_prod
     image: plugins/docker
-    registry: docker.cloud.neocodenetworks.org
-    repo: docker.cloud.neocodenetworks.org/mue/server
-    secrets: [ docker_username, docker_password ]
-    tag: prod
+    settings:
+      registry: docker.cloud.neocodenetworks.org
+      repo: docker.cloud.neocodenetworks.org/mue/server
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+      tags: prod
     when:
-      event: deployment
-      environment: production
+      target: production
 
-  notify_neopush:
+  - name: notify_neopush
     image: docker.cloud.neocodenetworks.org/neopush/drone
-    pull: true
-    secrets: [ neopush_api_key ]
-    errignore: true
+    pull: always
+    err_ignore: true
+    settings:
+      api_key:
+        from_secret: neopush_api_key
 
 services:
-  redis:
+  - name: redis
     image: redis
+    ports:
+      - 6379
+
+---
+kind: secret
+name: npm_username
+get:
+  path: commonsecrets
+  name: npm_username
+---
+kind: secret
+name: npm_password
+get:
+  path: commonsecrets
+  name: npm_password
+---
+kind: secret
+name: npm_email
+get:
+  path: commonsecrets
+  name: npm_email
+---
+kind: secret
+name: docker_username
+get:
+  path: commonsecrets
+  name: docker_username
+---
+kind: secret
+name: docker_password
+get:
+  path: commonsecrets
+  name: docker_password
+---
+kind: secret
+name: s3_endpoint
+get:
+  path: commonsecrets
+  name: s3_endpoint
+---
+kind: secret
+name: aws_access_key_id
+get:
+  path: commonsecrets
+  name: aws_access_key_id
+---
+kind: secret
+name: aws_secret_access_key
+get:
+  path: commonsecrets
+  name: aws_secret_access_key
+---
+kind: secret
+name: neopush_api_key
+get:
+  path: commonsecrets
+  name: neopush_api_key
