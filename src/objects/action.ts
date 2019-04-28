@@ -1,5 +1,6 @@
 import * as _ from "lodash";
 
+import { IllegalObjectNameError } from "../errors";
 import { GameObject } from "./gameobject";
 import { ActionLocations, ActionParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
@@ -14,6 +15,10 @@ export interface ActionMetaData extends MetaData {
 
 export class Action extends GameObject<ActionMetaData> {
     static async create(world: World, name: string, creator: Player, location?: ActionLocations) {
+        if (name.startsWith("$")) {
+            throw new IllegalObjectNameError(name, GameObjectTypes.ACTION);
+        }
+
         const p = new Action(world, {
             name,
             "creator": creator.id,

@@ -71,3 +71,9 @@ export class PlayerNameAlreadyExistsError extends GameError {
         super(`Player with the name ${playerName} already exists [${existingPlayerId}]`, {playerName, existingPlayerId});
     }
 }
+
+export class IllegalObjectNameError extends GameError {
+    constructor(name: string, type: GameObjectTypes) {
+        super(`Object(${type}) was given an illegal name "${name}"`, {name, type});
+    }
+}

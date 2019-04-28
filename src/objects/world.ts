@@ -140,6 +140,17 @@ export class World {
         return this.getRoomById(rootRoomId);
     }
 
+    public async getStartRoom(): Promise<Room> {
+        this.stateEnforce();
+
+        const startRoomId = await this.storage.getRootValue(RootFields.START_ROOM);
+        if (!startRoomId) {
+            return this.getRootRoom();
+        }
+
+        return this.getRoomById(startRoomId);
+    }
+
     public async getItemById(id: string): Promise<Item> {
         this.stateEnforce();
         return Item.imitate(this, expectExtendedId(id, GameObjectTypes.ITEM));

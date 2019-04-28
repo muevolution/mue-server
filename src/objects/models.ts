@@ -8,6 +8,7 @@ export enum GameObjectTypes {
 
 export enum RootFields {
     ROOT_ROOM = "root_room",
+    START_ROOM = "start_room",
     PLAYER_ROOT = "player_root",
     GOD = "god"
 }

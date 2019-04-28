@@ -377,6 +377,37 @@ describe("World", () => {
         });
     });
 
+    describe("#getStartRoom", () => {
+        it("should return the start room", async () => {
+            const world = await createWorldAndInit();
+            const creator = (await makeCreator(world))();
+
+            const actual = await world.getStartRoom();
+            expect(actual).to.exist.and.have.property("id").equal(creator.rootRoom.id);
+
+            await world.shutdown();
+        });
+
+        // TODO: Write a test checking default (root) vs changing and validating
+
+        it("should fail if server has not been initialized", async () => {
+            const world = await createWorld();
+
+            const actual = world.getStartRoom();
+            await expect(actual).to.be.rejectedWith(WorldNotInitError);
+
+            await world.shutdown();
+        });
+
+        it("should fail if server has been shut down", async () => {
+            const world = await createWorldAndInit();
+            await world.shutdown();
+
+            const actual = world.getStartRoom();
+            await expect(actual).to.be.rejectedWith(WorldShutdownError);
+        });
+    });
+
     describe("#getItemById", () => {
         let world: MockWorld;
         let testItem: Item;

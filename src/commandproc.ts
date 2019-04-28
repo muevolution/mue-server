@@ -85,6 +85,16 @@ export class CommandProcessor {
             case "$set":
                 await builtins.command_set(this.world, player, command);
                 return true;
+            case "$createaction":
+            case "$createitem":
+            case "$createplayer":
+            case "$createroom":
+            case "$createscript":
+                await builtins.command_create(this.world, player, command);
+                return true;
+            case "$target":
+                await builtins.command_target(this.world, player, command);
+                return true;
         }
 
         return false;
