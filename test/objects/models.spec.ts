@@ -1,17 +1,19 @@
 import { expect } from "chai";
-import { GameObjectTypes, splitExtendedId, expectExtendedId } from "../../src/objects";
+import { expectExtendedId, GameObjectTypes, splitExtendedId } from "../../src/objects";
 
 describe("Models", () => {
     describe(".splitExtendedId", () => {
         it("should split a short id", () => {
             const actual = splitExtendedId("asdf");
-            expect(actual).to.have.property("id").and.equal("asdf");
+            expect(actual).to.not.have.property("id");
+            expect(actual).to.have.property("shortid").and.equal("asdf");
             expect(actual).to.not.have.property("type");
         });
 
         it("should split a long id", () => {
             const actual = splitExtendedId("r:asdf");
-            expect(actual).to.have.property("id").and.equal("asdf");
+            expect(actual).to.have.property("id").and.equal("r:asdf");
+            expect(actual).to.have.property("shortid").and.equal("asdf");
             expect(actual).to.have.property("type").and.equal(GameObjectTypes.ROOM);
         });
 

@@ -1,13 +1,10 @@
 import { VMScript } from "vm2";
 
-import { GameObjectIdDoesNotExist, GameObjectIdExistsError } from "../errors";
 import { GameObject } from "./gameobject";
 import { ScriptLocations, ScriptParents } from "./model-aliases";
 import { GameObjectTypes, MetaData } from "./models";
 import { Player } from "./player";
 import { World } from "./world";
-
-let SCRIPT_CACHE = {} as {[id: string]: Script};
 
 const CODE_WRAP_HEAD = `
 (async function() {
@@ -29,34 +26,17 @@ export class Script extends GameObject {
             "parent": creator.id,
             "location": location ? location.id : creator.id
         });
-        if (SCRIPT_CACHE[p.id]) {
-            throw new GameObjectIdExistsError(p.id, GameObjectTypes.SCRIPT);
-        }
-        await world.storage.addObject(p);
-        SCRIPT_CACHE[p.id] = p;
-        return p;
+
+        return world.objectCache.standardCreate(p, GameObjectTypes.SCRIPT);
     }
 
     static async imitate(world: World, id: string) {
-        if (SCRIPT_CACHE[id]) {
-            return SCRIPT_CACHE[id];
-        }
-
-        const meta = await world.storage.getMeta(id);
-        if (!meta) {
-            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.SCRIPT);
-        }
-
-        const code = await world.storage.getScriptCode(id);
-
-        const p = new Script(world, meta, id);
-        p.loadCode(code);
-        SCRIPT_CACHE[id] = p;
-        return p;
-    }
-
-    static invalidateCache() {
-        SCRIPT_CACHE = {};
+        return world.objectCache.standardImitate(id, GameObjectTypes.SCRIPT, async (meta) => {
+            const p = new Script(world, meta, id);
+            const code = await world.storage.getScriptCode(id);
+            p.loadCode(code);
+            return p;
+        });
     }
 
     private _compiled: VMScript;
@@ -87,10 +67,6 @@ export class Script extends GameObject {
     public async updateCode(code: string) {
         this.loadCode(code);
         await this.world.storage.setScriptCode(this, code);
-    }
-
-    protected getCache() {
-        return SCRIPT_CACHE;
     }
 
     private loadCode(code: string) {

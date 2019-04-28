@@ -1,6 +1,5 @@
 import * as _ from "lodash";
 
-import { GameObjectIdDoesNotExist, GameObjectIdExistsError } from "../errors";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
 import { GameObject } from "./gameobject";
@@ -11,8 +10,6 @@ import { Player } from "./player";
 import { Script } from "./script";
 import { World } from "./world";
 
-const ROOM_CACHE = {} as {[id: string]: Room};
-
 export class Room extends GameObject implements Container {
     static async create(world: World, name: string, creator: Player, parent?: RoomParents, location?: RoomLocations) {
         const p = new Room(world, {
@@ -21,27 +18,12 @@ export class Room extends GameObject implements Container {
             "parent": parent ? parent.id : null,
             "location": location ? location.id : parent ? parent.id : null,
         });
-        if (ROOM_CACHE[p.id]) {
-            throw new GameObjectIdExistsError(p.id, GameObjectTypes.ROOM);
-        }
-        await world.storage.addObject(p);
-        ROOM_CACHE[p.id] = p;
-        return p;
+
+        return world.objectCache.standardCreate(p, GameObjectTypes.ROOM);
     }
 
     static async imitate(world: World, id: string) {
-        if (ROOM_CACHE[id]) {
-            return ROOM_CACHE[id];
-        }
-
-        const meta = await world.storage.getMeta(id);
-        if (!meta) {
-            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.ROOM);
-        }
-
-        const p = new Room(world, meta, id);
-        ROOM_CACHE[id] = p;
-        return p;
+        return world.objectCache.standardImitate(id, GameObjectTypes.ROOM, (meta) => new Room(world, meta, id));
     }
 
     protected constructor(world: World, meta?: MetaData, id?: string) {
@@ -137,9 +119,5 @@ export class Room extends GameObject implements Container {
         }
 
         return super.destroy();
-    }
-
-    protected getCache() {
-        return ROOM_CACHE;
     }
 }

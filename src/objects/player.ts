@@ -1,6 +1,5 @@
 import * as _ from "lodash";
 
-import { GameObjectIdDoesNotExist } from "../errors";
 import { InteriorMessage } from "../netmodels";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
@@ -12,8 +11,6 @@ import { Room } from "./room";
 import { Script } from "./script";
 import { World } from "./world";
 
-const PLAYER_CACHE = {} as {[id: string]: Player};
-
 export class Player extends GameObject implements Container {
     static async create(world: World, name: string, creator?: Player, parent?: PlayerParents, location?: PlayerLocations) {
         const p = new Player(world, {
@@ -23,25 +20,11 @@ export class Player extends GameObject implements Container {
             "location": location ? location.id : parent ? parent.id : null,
         });
 
-        await world.storage.addObject(p);
-        PLAYER_CACHE[p.id] = p;
-        return p;
+        return world.objectCache.standardCreate(p, GameObjectTypes.PLAYER);
     }
 
     static async imitate(world: World, id: string) {
-        if (PLAYER_CACHE[id]) {
-            return PLAYER_CACHE[id];
-        }
-
-        const meta = await world.storage.getMeta(id);
-        console.log("got", meta);
-        if (!meta) {
-            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.PLAYER);
-        }
-
-        const p = new Player(world, meta, id);
-        PLAYER_CACHE[id] = p;
-        return p;
+        return world.objectCache.standardImitate(id, GameObjectTypes.PLAYER, (meta) => new Player(world, meta, id));
     }
 
     protected constructor(world: World, meta?: MetaData, id?: string) {
@@ -201,9 +184,5 @@ export class Player extends GameObject implements Container {
 
     quit(reason?: string) {
         this.emit("quit", reason);
-    }
-
-    protected getCache() {
-        return PLAYER_CACHE;
     }
 }

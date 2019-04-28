@@ -35,7 +35,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
 
     protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
         super();
-        this._id = id ? splitExtendedId(id, objectType).id : UNASSIGNED_ID;
+        this._id = id ? splitExtendedId(id, objectType).shortid : UNASSIGNED_ID;
         this._type = objectType;
         this._meta = meta;
         this.tupdater = new BaseTypedEmitter(this);
@@ -106,11 +106,11 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return this.world.storage.getProps(this);
     }
 
-    public setProp(path: string, value: PropValues) {
+    public setProp(path: string, value: PropValues): Promise<boolean> {
         return this.world.storage.setProp(this, path, value);
     }
 
-    public setProps(props: PropStructure) {
+    public setProps(props: PropStructure): Promise<boolean> {
         return this.world.storage.setProps(this, props);
     }
 
@@ -152,7 +152,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return this._move(newLocation, [GameObjectTypes.ROOM, GameObjectTypes.PLAYER, GameObjectTypes.ITEM]);
     }
 
-    public postMove(newLocation: AllContainers, oldLocation?: GameObject): {oldLocation?: GameObject, newLocation: GameObject} {
+    public postMove(newLocation: AllContainers, oldLocation?: GameObject): { oldLocation?: GameObject, newLocation: GameObject } {
         this._meta.location = newLocation.id;
 
         const output = { oldLocation, newLocation };
@@ -163,7 +163,12 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     public async destroy(): Promise<boolean> {
         await this.world.storage.destroyObject(this);
         this._isDestroyed = true;
-        this.invalidateCache(this.id);
+        await this.world.objectCache.onDestroy(this);
+        return true;
+    }
+
+    async invalidate(): Promise<boolean> {
+        this._meta = await this.world.storage.getMeta(this);
         return true;
     }
 
@@ -171,26 +176,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return `'${this.name}' [${this.id}]`;
     }
 
-    protected getCache(): {[id: string]: GameObject} {
-        return null;
-    }
-
-    protected invalidateCache(id?: string): void {
-        const cache = this.getCache();
-        if (!cache) {
-            return;
-        }
-
-        if (id) {
-            delete cache[id];
-        } else {
-            Object.keys(cache).map((k) => {
-                delete cache[k];
-            });
-        }
-    }
-
-    protected async _reparent(newParent: AllLocations, restrictedTypes?: GameObjectTypes[]): Promise<{oldParent?: GameObject, newParent: GameObject}> {
+    protected async _reparent(newParent: AllLocations, restrictedTypes?: GameObjectTypes[]): Promise<{ oldParent?: GameObject, newParent: GameObject }> {
         if (!newParent) {
             return null;
         }
@@ -226,7 +212,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return output;
     }
 
-    protected async _move(newLocation: AllContainers, restrictedTypes?: GameObjectTypes[]): Promise<{oldLocation?: GameObject, newLocation: GameObject}> {
+    protected async _move(newLocation: AllContainers, restrictedTypes?: GameObjectTypes[]): Promise<{ oldLocation?: GameObject, newLocation: GameObject }> {
         if (!newLocation) {
             return null;
         }

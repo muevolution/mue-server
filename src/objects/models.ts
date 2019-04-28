@@ -28,14 +28,14 @@ export const ALL_CONTAINER_TYPES: GameObjectTypes[] = [
 
 export const ALL_PARENT_TYPES = ALL_CONTAINER_TYPES;
 
-export function splitExtendedId(id: string, checkType?: GameObjectTypes): {"id": string, "type"?: GameObjectTypes} {
+export function splitExtendedId(id: string, checkType?: GameObjectTypes): { "id"?: string, "shortid": string, "type"?: GameObjectTypes } {
     if (!id) {
         return null;
     }
 
     const a = id.split(":");
     if (a.length < 2) {
-        return {"id": a[0]};
+        return { "shortid": a[0] };
     } else {
         if (!a[1]) {
             return null;
@@ -44,12 +44,14 @@ export function splitExtendedId(id: string, checkType?: GameObjectTypes): {"id":
         const type = a[0] as GameObjectTypes;
 
         if (ALL_GAME_OBJECT_TYPES.indexOf(type) < 0) {
+            // TODO: Specific error class
             throw new Error(`Invalid object type (${type})`);
         } else if (checkType && type !== checkType) {
+            // TODO: Specific error class
             throw new Error(`Object ID ${id} does not match requested type ${checkType}`);
         }
 
-        return {type, "id": a[1]};
+        return { id, type, "shortid": a[1] };
     }
 }
 
@@ -60,6 +62,7 @@ export function expectExtendedId(id: string, type: GameObjectTypes): string {
     }
 
     if (exid.type && exid.type !== type) {
+        // TODO: Specific error class
         throw new Error(`Object ID ${id} does not match requested type ${type}`);
     } else if (exid.type) {
         return id;
@@ -110,9 +113,26 @@ export interface PlayerMessage extends GameObjectMessage {
     quit: string;
 }
 
-export interface InterServerMessage {
-    event: "joined" | "invalidate_script";
-    meta?: {
-        instance?: string;
+interface InterServerMessageAll {
+    event: "joined" | "invalidate_script" | "update_object";
+    instance: string;
+    meta?: any;
+}
+
+interface InterServerMessageJoined extends InterServerMessageAll {
+    event: "joined";
+}
+
+interface InterServerMessageInvalidateScript extends InterServerMessageAll {
+    event: "invalidate_script";
+}
+
+interface InterServerMessageUpdateObject extends InterServerMessageAll {
+    event: "update_object";
+    meta: {
+        id: string;
+        message: "invalidate" | "destroyed";
     };
 }
+
+export type InterServerMessage = InterServerMessageJoined | InterServerMessageInvalidateScript | InterServerMessageUpdateObject;

@@ -6,6 +6,7 @@ import { generateId } from "../common";
 import { WorldNotInitError, WorldShutdownError } from "../errors";
 import { Logger } from "../logging";
 import { InteriorMessage } from "../netmodels";
+import { ObjectCache } from "../objectcache";
 import { RedisConnection } from "../redis";
 import { Storage } from "../storage";
 import { Action } from "./action";
@@ -22,6 +23,7 @@ export class World {
     protected worldInstanceId: string;
     protected cmdproc = new CommandProcessor(this);
     protected isc: RedisConnection;
+    protected cache = new ObjectCache(this);
 
     constructor(protected opts: {
         redisConnection: RedisConnection
@@ -64,6 +66,11 @@ export class World {
         return new Storage(this.opts.redisConnection);
     }
 
+    public get objectCache(): ObjectCache {
+        this.stateEnforce();
+        return this.cache;
+    }
+
     public async publishMessage(message: InteriorMessage | string, target?: GameObject, meta?: {}): Promise<boolean> {
         this.stateEnforce();
 
@@ -81,7 +88,7 @@ export class World {
 
         let outboundMessage: InteriorMessage;
         if (typeof message === "string") {
-            outboundMessage = {"message": message, meta};
+            outboundMessage = { "message": message, meta };
         } else if (message) {
             outboundMessage = message;
             if (meta) {
@@ -221,28 +228,48 @@ export class World {
         await this.sendInterServer("invalidate_script");
     }
 
+    public async sendObjectUpdate(id: string, message: "invalidate" | "destroyed"): Promise<void> {
+        await this.sendInterServer("update_object", { id, message, "instance": this.worldInstanceId });
+    }
+
     private async configureInterServer() {
         this.stateEnforce();
 
         this.isc = this.opts.redisConnection.duplicate();
-        await this.sendInterServer("joined", {"instance": this.worldInstanceId});
+        await this.sendInterServer("joined", { "instance": this.worldInstanceId });
         await this.isc.client.subscribe("c:isc");
 
         // TODO: Move the handler elsewhere
         this.isc.client.on("message", async (channel: string, message: string) => {
             const msg = JSON.parse(message) as InterServerMessage;
+            if (msg.instance === this.worldInstanceId) {
+                // Ignore messages from our own instance
+                return;
+            }
+
             if (msg.event === "joined") {
-                Logger.info(`ISC> [${this.worldInstanceId}] New server joined cluster: ${msg.meta.instance}`);
+                Logger.info(`ISC> [${this.worldInstanceId}] New server joined cluster: ${msg.instance}`);
             } else if (msg.event === "invalidate_script") {
-                Logger.info(`ISC> [${this.worldInstanceId}] Script cache invalidated was requested by ${msg.meta.instance}`);
-                Script.invalidateCache();
+                Logger.info(`ISC> [${this.worldInstanceId}] Script cache invalidated was requested by ${msg.instance}`);
+                this.cache.invalidateAll(GameObjectTypes.SCRIPT).catch((err) => {
+                    Logger.error("Failed to invalidate scripts", err);
+                });
+            } else if (msg.event === "update_object") {
+                Logger.info(`ISC> [${this.worldInstanceId}] Object ${msg.meta.id} ${msg.meta.message} update requested by ${msg.instance}`);
+                if (msg.meta.message === "invalidate") {
+                    this.cache.invalidateLocal(msg.meta.id).catch((err) => {
+                        Logger.error(`Failed to invalidate object ID ${msg.meta.id}`, err);
+                    });
+                } else if (msg.meta.message === "destroyed") {
+                    this.cache.postDestroy(msg.meta.id);
+                }
             }
         });
     }
 
     private async sendInterServer(event: InterServerMessage["event"], meta?: InterServerMessage["meta"]) {
         this.stateEnforce();
-        return this.opts.redisConnection.client.publish("c:isc", JSON.stringify({event, meta} as InterServerMessage));
+        return this.opts.redisConnection.client.publish("c:isc", JSON.stringify({ event, meta, "instance": this.worldInstanceId } as InterServerMessage));
     }
 
     private stateEnforce(): void {

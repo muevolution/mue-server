@@ -1,6 +1,5 @@
 import * as _ from "lodash";
 
-import { GameObjectIdDoesNotExist, GameObjectIdExistsError } from "../errors";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
 import { GameObject } from "./gameobject";
@@ -11,10 +10,6 @@ import { Room } from "./room";
 import { Script } from "./script";
 import { World } from "./world";
 
-// TODO: If we want to support multi-server we need to use many-instance with some sort of cross-server lifecycle system
-// Right now, an item ('s meta) could be updated on one server and not another
-const ITEM_CACHE = {} as {[id: string]: Item};
-
 export class Item extends GameObject implements Container {
     static async create(world: World, name: string, creator: Player, parent: ItemParents, location?: ItemLocations) {
         const p = new Item(world, {
@@ -23,25 +18,12 @@ export class Item extends GameObject implements Container {
             "parent": parent.id,
             "location": location ? location.id : parent.id
         });
-        if (ITEM_CACHE[p.id]) {
-            throw new GameObjectIdExistsError(p.id, GameObjectTypes.ITEM);
-        }
-        await world.storage.addObject(p);
-        ITEM_CACHE[p.id] = p;
-        return p;
+
+        return world.objectCache.standardCreate(p, GameObjectTypes.ITEM);
     }
 
     static async imitate(world: World, id: string) {
-        if (ITEM_CACHE[id]) {
-            return ITEM_CACHE[id];
-        }
-
-        const meta = await world.storage.getMeta(id);
-        if (!meta) {
-            throw new GameObjectIdDoesNotExist(id, GameObjectTypes.ITEM);
-        }
-
-        return new Item(world, meta, id);
+        return world.objectCache.standardImitate(id, GameObjectTypes.ITEM, (meta) => new Item(world, meta, id));
     }
 
     protected constructor(world: World, meta?: MetaData, id?: string) {
@@ -92,9 +74,5 @@ export class Item extends GameObject implements Container {
         }
 
         return super.destroy();
-    }
-
-    protected getCache() {
-        return ITEM_CACHE;
     }
 }

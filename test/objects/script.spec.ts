@@ -3,7 +3,7 @@ import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdDoesNotExist, InvalidGameObjectParentError } from "../../src/errors";
-import { Player, Room, Script } from "../../src/objects";
+import { Player, Room, Script, GameObjectTypes } from "../../src/objects";
 import { afterTestGroup, beforeTestGroup, init, objectCreator } from "../common";
 
 const { redis, world } = init();
@@ -118,7 +118,7 @@ describe("Script", () => {
         });
 
         it("should reload cold with code loaded", async () => {
-            Script.invalidateCache(); // Invalidate the cache first to force a cold fetch
+            await world.objectCache.invalidateAll(GameObjectTypes.SCRIPT); // Invalidate the cache first to force a cold fetch
             const refind = await world.getScriptById(testScript.id);
             expect(refind).to.have.property("compiled").have.property("code").include(testCode);
         });
