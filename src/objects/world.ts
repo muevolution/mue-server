@@ -236,6 +236,7 @@ export class World {
     }
 
     public async invalidateScriptCache(): Promise<void> {
+        await this.cache.invalidateAll(GameObjectTypes.SCRIPT);
         await this.sendInterServer("invalidate_script");
     }
 

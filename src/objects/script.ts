@@ -60,6 +60,17 @@ export class Script extends GameObject {
         return super._reparent(newParent, [GameObjectTypes.PLAYER]);
     }
 
+    public async invalidate(): Promise<boolean> {
+        const result = await super.invalidate();
+        if (!result) {
+            return false;
+        }
+
+        const code = await this.world.storage.getScriptCode(this);
+        this.loadCode(code);
+        return true;
+    }
+
     public get compiled() {
         return this._compiled;
     }
