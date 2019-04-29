@@ -8,9 +8,8 @@ export async function command_target(world: World, player: Player, command: Loca
     let targetAction: string;
     let targetLocation: string;
 
-    if (command.args && command.args.length > 0) {
-        const full = command.args.join(" ");
-        const spl = full.split("=");
+    if (command.args) {
+        const spl = command.args.split("=");
 
         targetAction = spl[0];
         if (spl.length > 1) {

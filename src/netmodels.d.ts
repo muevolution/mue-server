@@ -2,7 +2,7 @@ import { ServerToClient } from "../client_types";
 
 export interface LocalCommand {
     command: string;
-    args?: string[];
+    args?: string;
     params?: {[key: string]: string};
 }
 

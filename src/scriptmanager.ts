@@ -4,7 +4,7 @@ import { VM } from "vm2";
 
 import { JsSandbox } from "./js-sandbox";
 import { InteriorMessage, LocalCommand, MessageFormats } from "./netmodels";
-import { Player, Script, World } from "./objects";
+import { Player, Script, World, splitExtendedId } from "./objects";
 
 // TODO: Some form of timeslicing per player
 
@@ -141,6 +141,11 @@ export class ScriptManager {
                 "thisScript": thisScript.id,
                 "thisPlayer": runBy.id,
                 command
+            },
+            "Util": {
+                "splitId": (objectId: string) => {
+                    return splitExtendedId(objectId) as any;
+                }
             },
             "Log": {
                 "debug": (...args: any[]) => {

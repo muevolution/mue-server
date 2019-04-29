@@ -37,8 +37,8 @@ export async function command_create(world: World, player: Player, command: Loca
             throw new Error(`Command "${command.command}" mismatched with builtin command_create`);
     }
 
-    if (command.args && command.args.length > 0) {
-        const full = command.args.join(" ");
+    if (command.args) {
+        const full = command.args;
         const spl = full.split("=");
         name = spl[0];
         if (spl.length > 1) {

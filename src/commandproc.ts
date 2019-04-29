@@ -24,10 +24,19 @@ export class CommandProcessor {
         const cmd = {} as LocalCommand;
 
         if ((request as ShortCommandRequest).line) {
-            // TODO: Add a thing that only grabs the first word and lets you keep multiple spaces
-            const split = _.split((request as ShortCommandRequest).line, " ");
-            cmd.command = _.first(split);
-            cmd.args = _.tail(split);
+            const line = (request as ShortCommandRequest).line;
+            if (!line || line.trim().length === 0) {
+                // We got a blank line. This may be useful somewhere else but not at root
+                return false;
+            }
+
+            const hasSpace = line.indexOf(" ");
+            if (hasSpace > -1) {
+                cmd.command = line.substring(0, hasSpace);
+                cmd.args = line.substring(hasSpace + 1);
+            } else {
+                cmd.command = line;
+            }
         } else {
             cmd.command = (request as ExpandedCommandRequest).command;
             cmd.params = (request as ExpandedCommandRequest).params;
@@ -59,12 +68,20 @@ export class CommandProcessor {
         if (command.command.startsWith("\"")) {
             const spl = command.command.substring(1);
             command.command = "say";
-            command.args.unshift(spl);
+            if (command.args) {
+                command.args = spl + " " + command.args;
+            } else {
+                command.args = spl;
+            }
             return false;
         } else if (command.command.startsWith(":")) {
             const spl = command.command.substring(1);
             command.command = "pose";
-            command.args.unshift(spl);
+            if (command.args) {
+                command.args = spl + " " + command.args;
+            } else {
+                command.args = spl;
+            }
             return false;
         }
 

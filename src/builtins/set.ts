@@ -11,9 +11,8 @@ export async function command_set(world: World, player: Player, command: LocalCo
     let key: string;
     let value: string;
 
-    if (command.args && command.args.length > 0) {
-        const rejoined = command.args.join(" ");
-        const reg = ARG_REGEX.exec(rejoined);
+    if (command.args) {
+        const reg = ARG_REGEX.exec(command.args);
         if (reg && reg.length === 4) {
             [, target, key, value] = reg;
         }

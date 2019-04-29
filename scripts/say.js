@@ -1,6 +1,6 @@
 /// worldscript:say
 
-const sayMessage = script.command.args.join(" ");
+const sayMessage = script.command.args;
 const formats = {
     "firstPerson": "You say, \"{message}\"",
     "thirdPerson": `{speaker!name} says, \"{message}\"`

@@ -1,6 +1,6 @@
 /// worldscript:pose
 
-const sayMessage = script.command.args.join(" ");
+const sayMessage = script.command.args;
 const formats = {
     "firstPerson": "{actor!name} {action}",
     "thirdPerson": `{actor!name} {action}`

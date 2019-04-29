@@ -7,16 +7,14 @@ const command = script.command;
 let lookTarget;
 if (command.params && command.params.target) {
     lookTarget = command.params.target;
-} else if (command.args && command.args.length > 0) {
-    lookTarget = command.args[0];
+} else if (command.args) {
+    lookTarget = command.args;
 }
 
-let isRoom = false;
 let lookObj;
 if (!lookTarget) {
     // Look at the room
     lookObj = await world.getLocation(script.thisPlayer);
-    isRoom = true;
 } else {
     // Find the named target
     lookObj = await world.find(lookTarget);
@@ -30,7 +28,7 @@ if (!lookObj) {
 let outputLines = [];
 
 // Get the name if it's supposed to be shown
-if (isRoom) {
+if (Util.splitId(lookObj).type === Types.Room) {
     const roomDetails = await world.getDetails(lookObj);
     outputLines.push(roomDetails.name);
 }

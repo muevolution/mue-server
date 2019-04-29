@@ -1,4 +1,4 @@
-import { MessageFormats } from "./netmodels";
+import { MessageFormats, LocalCommand } from "./netmodels";
 import { PropValues } from "./storage";
 
 // This is the js sandbox contract
@@ -19,7 +19,10 @@ interface JsSandbox {
     "script": {
         "thisScript": string;
         "thisPlayer": string;
-        "command": {};
+        "command": LocalCommand;
+    };
+    "Util": {
+        "splitId": (objectId: string) => {"id": string, "shortid": string, "type": string};
     };
     "Log": {
         "debug": (...args: any[]) => void;
