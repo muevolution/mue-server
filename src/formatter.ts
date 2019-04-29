@@ -3,12 +3,19 @@ import * as formatter from "string-format";
 
 import { World } from "./objects";
 
+function safeString(str: string): string {
+    return str.replace(/([\{\}])/g, "$1$1");
+}
+
 function safeArgs(args: {[key: string]: any}) {
     return _.mapValues(args, (value, key) => {
-        if (typeof value === "string" || typeof value === "number") {
+        if (typeof value === "string") {
+            // Escape args because ???
+            return safeString(value);
+        } else if (typeof value === "number") {
             return value;
         }
-        return JSON.stringify(value);
+        return safeString(JSON.stringify(value));
     });
 }
 
