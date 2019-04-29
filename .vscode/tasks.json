@@ -5,10 +5,10 @@
     "tasks": [
         {
             "label": "Build",
-            "type": "gulp",
-            "task": "build",
+            "type": "npm",
+            "script": "build",
             "problemMatcher": [
-                "$gulp-tsc"
+                "$tsc"
             ],
             "group": {
                 "kind": "build",

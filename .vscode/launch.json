@@ -13,7 +13,7 @@
             "outFiles": [
                 "${workspaceRoot}/build/**/*.js"
             ],
-            "remoteRoot": "/mnt/d/Users/Kauko/Development/mue/mue-server/",
+            "remoteRoot": "/mnt/c/Users/Kauko/Development/mue/mue-server/",
             "localRoot": "${workspaceRoot}",
             "smartStep": true
         },
