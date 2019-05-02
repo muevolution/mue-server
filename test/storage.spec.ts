@@ -113,7 +113,7 @@ describe("Storage", () => {
                 "location": "r:rewq"
             };
 
-            const testItem = new MockItem(world, meta, id);
+            const testItem = new MockItem(world, meta as any, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -135,7 +135,7 @@ describe("Storage", () => {
                 "name": "TestItem.addObject4"
             };
 
-            const testItem = new MockItem(world, meta, id);
+            const testItem = new MockItem(world, meta as any, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -159,7 +159,7 @@ describe("Storage", () => {
                 location
             };
 
-            const testItem = new MockItem(world, meta, id);
+            const testItem = new MockItem(world, meta as any, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -186,7 +186,7 @@ describe("Storage", () => {
                 location
             };
 
-            const testItem = new MockItem(world, meta, id);
+            const testItem = new MockItem(world, meta as any, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -211,7 +211,7 @@ describe("Storage", () => {
                 "name": "TestItem.addObject7"
             };
 
-            const testItem = new MockItem(world, meta, id);
+            const testItem = new MockItem(world, meta as any, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -228,14 +228,14 @@ describe("Storage", () => {
 
         it("should fail with an ID that already exists [*NCPL]", async () => {
             // Create first item
-            const testItem = new MockItem(world, {"name": "TestItem.addObject8"}, "tiao8");
+            const testItem = new MockItem(world, {"name": "TestItem.addObject8"} as any, "tiao8");
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
             expect(actual).to.be.true;
 
             // Create second item
-            const testItem2 = new MockItem(world, {"name": "TestItem.addObject8"}, "tiao8");
+            const testItem2 = new MockItem(world, {"name": "TestItem.addObject8"} as any, "tiao8");
 
             // API: Should throw
             const actual2 = storage.addObject(testItem2);
@@ -248,7 +248,7 @@ describe("Storage", () => {
             const meta = {
                 "creator": "p:asdf",
                 "parent": "i:sdfg",
-                "name": null as string,
+                "name": null as any,
                 location
             };
 
@@ -260,7 +260,7 @@ describe("Storage", () => {
         });
 
         it("should add a new player to the name key [IN---]", async () => {
-            const testPlayer = new MockPlayer(world, {"name": "tiao10"});
+            const testPlayer = new MockPlayer(world, {"name": "tiao10"} as any);
 
             // API: Should return true
             const actual = await storage.addObject(testPlayer);
@@ -273,14 +273,14 @@ describe("Storage", () => {
 
         it("should fail to add a player that already exists [I*---]", async () => {
             // Create first item
-            const testPlayer = new MockPlayer(world, {"name": "tiao11"});
+            const testPlayer = new MockPlayer(world, {"name": "tiao11"} as any);
 
             // API: Should return true
             const actual = await storage.addObject(testPlayer);
             expect(actual).to.be.true;
 
             // Create second item
-            const testPlayer2 = new MockPlayer(world, {"name": "tiao11"});
+            const testPlayer2 = new MockPlayer(world, {"name": "tiao11"} as any);
 
             // API: Should throw
             const actual2 = storage.addObject(testPlayer2);
@@ -395,7 +395,7 @@ describe("Storage", () => {
             const testPlayer = await creator().createTestPlayer("UpdatePlayerNameTestABC");
 
             // Create a fake player that we'll change the value to
-            const fakePlayer = new MockPlayer(world, {"name": "UpdaterPlayerNameTestXYZ"});
+            const fakePlayer = new MockPlayer(world, {"name": "UpdaterPlayerNameTestXYZ"} as any);
             fakePlayer.setInitialId(testPlayer.shortid);
 
             // API: Should return expected values
@@ -420,7 +420,7 @@ describe("Storage", () => {
 
         it("#getProp() should get nothing at start", async () => {
             const actual = await storage.getProp(testObj, "testpath");
-            expect(actual).to.be.null;
+            expect(actual).to.be.undefined;
 
             const getRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testpath");
             expect(getRedisActual).to.be.null;
@@ -474,11 +474,11 @@ describe("Storage", () => {
             const setRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testempty");
             expect(setRedisActual).to.equal(`"a"`);
 
-            const unsetActual = await storage.setProp(testObj, "testempty", null);
+            const unsetActual = await storage.setProp(testObj, "testempty", undefined);
             expect(unsetActual).to.be.true;
 
             const getActual = await storage.getProp(testObj, "testempty");
-            expect(getActual).to.be.null;
+            expect(getActual).to.be.undefined;
 
             const getRedisActual = await redis.client.hget(`s:${testObj.id}:props`, "testempty");
             expect(getRedisActual).to.be.null;
@@ -497,7 +497,7 @@ describe("Storage", () => {
             const setActual = await storage.setProps(testObj, {
                 "teststrprop": 361666,
                 "newprop": "newval",
-                "testarrprop": null
+                "testarrprop": undefined
             });
             expect(setActual).to.be.true;
 
@@ -508,7 +508,7 @@ describe("Storage", () => {
             expect(getNewActual).to.be.a("string").and.equal("newval");
 
             const getUnsetActual = await storage.getProp(testObj, "testarrprop");
-            expect(getUnsetActual).to.be.null;
+            expect(getUnsetActual).to.be.undefined;
 
             const getRedisActual = await redis.client.hgetall(`s:${testObj.id}:props`);
             expect(getRedisActual).to.deep.equal({

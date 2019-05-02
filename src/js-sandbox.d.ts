@@ -7,11 +7,11 @@ interface JsSandbox {
         "tell": (message: string, target?: string, meta?: {[key: string]: any}) => void;
         "tellExtended": (extendedFormat: MessageFormats, extendedContent: {[key: string]: any}, target?: string, meta?: {[key: string]: any}) => void;
         "connectedPlayers": () => Promise<string[]>;
-        "getPlayerNameFromId": (playerId: string) => Promise<string>;
-        "getPlayerIdFromName": (playerName: string) => Promise<string>;
-        "getParent": (objectId: string) => Promise<string>;
-        "getLocation": (objectId: string) => Promise<string>;
-        "find": (item: string) => Promise<string>;
+        "getPlayerNameFromId": (playerId: string) => Promise<string | undefined>;
+        "getPlayerIdFromName": (playerName: string) => Promise<string | undefined>;
+        "getParent": (objectId: string) => Promise<string | undefined>;
+        "getLocation": (objectId: string) => Promise<string | undefined>;
+        "find": (item: string) => Promise<string | undefined>;
         "getDetails": (target: string) => Promise<{[key: string]: string}>;
         "getProp": (target: string, path: string) => Promise<PropValues>;
         "getContents": (target: string) => Promise<string[]>;

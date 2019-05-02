@@ -1,3 +1,4 @@
+import * as bluebird from "bluebird";
 import * as _ from "lodash";
 import * as formatter from "string-format";
 
@@ -20,8 +21,8 @@ function safeArgs(args: {[key: string]: any}) {
 }
 
 export interface FormattedMessage {
-    message: string;
-    substitutions: {[key: string]: string};
+    message?: string;
+    substitutions?: {[key: string]: string};
 }
 
 export async function format(world: World, msg: string, args: {[key: string]: any}): Promise<FormattedMessage> {
@@ -36,20 +37,20 @@ export async function format(world: World, msg: string, args: {[key: string]: an
 
     args = safeArgs(args);
     const f = formatter.create(transformers);
-    let message = msg ? f(msg, args) : null;
+    let message = msg ? f(msg, args) : undefined;
     if (!message) {
-        return {"message": null, "substitutions": null};
+        return {"message": undefined, "substitutions": undefined};
     }
 
     const substitutions: FormattedMessage["substitutions"] = {};
-    await Promise.all(_.map(namesToSubstitute, async (id) => {
+    await bluebird.each(namesToSubstitute, async (id) => {
         const obj = await world.getObjectById(id);
         if (!obj) {
             return undefined;
         }
 
         substitutions[`__hyper_name_${id}`] = obj.name;
-    }));
+    });
 
     message = f(message, substitutions);
 

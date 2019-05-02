@@ -11,9 +11,9 @@ import { AllContainers } from "../objects/model-aliases";
 // $createscript wand.js
 export async function command_create(world: World, player: Player, command: LocalCommand) {
     let type: GameObjectTypes;
-    let name: string;
-    let targetLocation: string;
-    let targetParent: string;
+    let name: string | undefined;
+    let targetLocation: string | undefined;
+    let targetParent: string | undefined;
 
     // Convert command name into type for convienience
     switch (command.command) {
@@ -44,7 +44,7 @@ export async function command_create(world: World, player: Player, command: Loca
         if (spl.length > 1) {
             targetLocation = spl[1];
         }
-    } else if (_.size(command.params)) {
+    } else if (command.params && _.size(command.params) > 0) {
         name = command.params.name;
         targetLocation = command.params.location;
         targetParent = command.params.parent;
@@ -55,13 +55,14 @@ export async function command_create(world: World, player: Player, command: Loca
         return;
     }
 
-    let parent: AllContainers;
-    let location: AllContainers;
+    let parent: AllContainers | undefined;
+    let location: AllContainers | undefined;
 
     if (targetParent) {
-        const result = await player.resolveTarget(targetLocation, true);
+        const result = await player.resolveTarget(targetParent, true);
         if (!result) {
             await world.publishMessage(`Could not find the specified parent.`, player);
+            return;
         }
 
         if (ALL_CONTAINER_TYPES.includes(result.type)) {
@@ -92,6 +93,7 @@ export async function command_create(world: World, player: Player, command: Loca
         const result = await player.resolveTarget(targetLocation, true);
         if (!result) {
             await world.publishMessage(`Could not find the specified location.`, player);
+            return;
         }
 
         if (ALL_CONTAINER_TYPES.includes(result.type)) {
@@ -120,18 +122,42 @@ export async function command_create(world: World, player: Player, command: Loca
         }
     }
 
-    let newObjP: Promise<GameObject>;
+    let newObjP: Promise<GameObject> | undefined;
     switch (type) {
         case GameObjectTypes.ACTION:
             newObjP = Action.create(world, name, player, location);
             break;
         case GameObjectTypes.ITEM:
+            if (!parent) {
+                await world.publishMessage(`Error creating item. No parent found. Please contact an admin.`, player);
+                return;
+            }
             newObjP = Item.create(world, name, player, parent, location);
             break;
         case GameObjectTypes.PLAYER:
+            if (!parent) {
+                await world.publishMessage(`Error creating player. No parent found. Please contact an admin.`, player);
+                return;
+            }
+            if (!(parent instanceof Room)) {
+                await world.publishMessage(`Error creating player. Parent is not a room.`, player);
+                return;
+            }
             newObjP = Player.create(world, name, player, parent, location);
             break;
         case GameObjectTypes.ROOM:
+            if (!parent) {
+                await world.publishMessage(`Error creating room. No parent found. Please contact an admin.`, player);
+                return;
+            }
+            if (!(parent instanceof Room)) {
+                await world.publishMessage(`Error creating room. Parent is not a room.`, player);
+                return;
+            }
+            if (!(location instanceof Room)) {
+                await world.publishMessage(`Error creating room. Location is not a room.`, player);
+                return;
+            }
             newObjP = Room.create(world, name, player, parent, location);
             break;
         case GameObjectTypes.SCRIPT:
@@ -141,7 +167,15 @@ export async function command_create(world: World, player: Player, command: Loca
 
     try {
         const newObj = await newObjP;
-        await world.publishMessage(`Created ${name} [${newObj.id}] in ${location.name} [${location.id}]`, player);
+        if (newObj) {
+            if (location) {
+                await world.publishMessage(`Created ${name} [${newObj.id}] in ${location.name} [${location.id}]`, player);
+            } else {
+                await world.publishMessage(`Created ${name} [${newObj.id}].`, player);
+            }
+        } else {
+            await world.publishMessage(`Failed to create.`, player);
+        }
     } catch (err) {
         // TODO: Don't send users hard errors, soften standard errors
         await world.publishMessage(`Problem creating object: ${err.message}`, player);

@@ -33,7 +33,7 @@ export class Action extends GameObject<ActionMetaData> {
         return world.objectCache.standardImitate(id, GameObjectTypes.ACTION, (meta) => new Action(world, meta, id));
     }
 
-    protected constructor(world: World, meta?: ActionMetaData, id?: string) {
+    protected constructor(world: World, meta: ActionMetaData, id?: string) {
         super(world, GameObjectTypes.ACTION, meta, id);
     }
 
@@ -55,9 +55,9 @@ export class Action extends GameObject<ActionMetaData> {
         return this._meta.target || null;
     }
 
-    setTarget(target: Room | Script): Promise<boolean> {
-        if (target == null) {
-            this._meta.target = null;
+    setTarget(target: Room | Script | null): Promise<boolean> {
+        if (!target) {
+            this._meta.target = undefined;
         } else {
             this._meta.target = target.id;
         }

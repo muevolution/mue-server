@@ -5,8 +5,8 @@ import { Action, GameObjectTypes, Player, Room, Script, World } from "../objects
 
 // $target action=target
 export async function command_target(world: World, player: Player, command: LocalCommand) {
-    let targetAction: string;
-    let targetLocation: string;
+    let targetAction: string | undefined;
+    let targetLocation: string | undefined;
 
     if (command.args) {
         const spl = command.args.split("=");
@@ -15,7 +15,7 @@ export async function command_target(world: World, player: Player, command: Loca
         if (spl.length > 1) {
             targetLocation = spl[1];
         }
-    } else if (_.size(command.params)) {
+    } else if (command.params && _.size(command.params) > 0) {
         targetAction = command.params.action;
         targetLocation = command.params.location;
     }

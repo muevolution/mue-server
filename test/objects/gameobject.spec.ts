@@ -65,7 +65,7 @@ describe("GameObject", () => {
         });
 
         it("should fail to match on null", () => {
-            const actual = GameObject.checkType(null, GameObjectTypes.ROOM);
+            const actual = GameObject.checkType(null as any, GameObjectTypes.ROOM);
             expect(actual).to.be.false;
         });
 
@@ -151,7 +151,7 @@ describe("GameObject", () => {
         });
 
         it("should not match on null", () => {
-            const actual = firstObj.matchName(null);
+            const actual = firstObj.matchName(null as any);
             expect(actual).to.be.false;
         });
 
@@ -205,7 +205,7 @@ describe("GameObject", () => {
         });
 
         it("should not set as null", async () => {
-            const actual = await testObj.rename(null);
+            const actual = await testObj.rename(null as any);
             expect(actual).to.be.false;
         });
 
@@ -251,7 +251,7 @@ describe("GameObject", () => {
         });
 
         it("should not reparent to a null object", async () => {
-            const actual = await testObj.reparent(null);
+            const actual = await testObj.reparent(null as any);
             expect(actual).to.be.null;
         });
 
@@ -294,7 +294,7 @@ describe("GameObject", () => {
         });
 
         it("should not move to a null object", async () => {
-            const actual = await firstObj.move(null);
+            const actual = await firstObj.move(null as any);
             expect(actual).to.be.null;
         });
 

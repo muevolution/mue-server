@@ -34,7 +34,7 @@ export class Script extends GameObject {
         return world.objectCache.standardImitate(id, GameObjectTypes.SCRIPT, async (meta) => {
             const p = new Script(world, meta, id);
             const code = await world.storage.getScriptCode(id);
-            p.loadCode(code);
+            p.loadCode(code || "");
             return p;
         });
     }
@@ -42,7 +42,7 @@ export class Script extends GameObject {
     private _compiled: VMScript;
     private _code: string;
 
-    constructor(world: World, meta?: MetaData, id?: string) {
+    constructor(world: World, meta: MetaData, id?: string) {
         super(world, GameObjectTypes.SCRIPT, meta, id);
     }
 
@@ -67,7 +67,7 @@ export class Script extends GameObject {
         }
 
         const code = await this.world.storage.getScriptCode(this);
-        this.loadCode(code);
+        this.loadCode(code || "");
         return true;
     }
 

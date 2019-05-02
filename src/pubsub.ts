@@ -15,8 +15,8 @@ import { RedisConnection } from "./redis";
 
 export class PubSub {
     private _player: Player;
-    private baseclient: import ("ioredis").Redis;
-    private client: import ("ioredis").Redis;
+    private baseclient: import("ioredis").Redis;
+    private client: import("ioredis").Redis;
     private connected: boolean;
     private tsock: TypedEmitter<ServerToClient, ClientToServer>;
     private tupdater: BaseTypedEmitter<PlayerMessage, PlayerMessage>;
@@ -111,7 +111,9 @@ export class PubSub {
                     this.tsock.emit("message", output);
                     break;
                 case "echo":
-                    this.tsock.emit("echo", msgObj.message);
+                    if (msgObj.message) {
+                        this.tsock.emit("echo", msgObj.message);
+                    }
                     break;
             }
         });
@@ -126,7 +128,7 @@ export class PubSub {
                 const channels = ["c:world", `c:${player.location}`, `c:${player.id}`];
                 const result = await this.subscribe(player, ...channels);
                 if (result) {
-                    this.tsock.emit("auth", {"success": true, "message": `Welcome ${player.name} [${player.shortid}]`});
+                    this.tsock.emit("auth", { "success": true, "message": `Welcome ${player.name} [${player.shortid}]` });
                     await this.world.publishMessage(`${player.name} has connected`);
                 } else {
                     this.tsock.emit("fatal", { "message": "Unable to subscribe to channels.", "code": 201 });
@@ -164,7 +166,7 @@ export class PubSub {
         await this.client.subscribe(`c:${e.newLocation.id}`);
     }
 
-    private async getLocalMessage(msg: InteriorMessage): Promise<FormattedMessage & {format: string}> {
+    private async getLocalMessage(msg: InteriorMessage): Promise<FormattedMessage & { format?: string }> {
         let format;
 
         if (msg.extendedFormat && msg.extendedContent) {
@@ -173,6 +175,6 @@ export class PubSub {
             return { "message": formatted.message, "substitutions": formatted.substitutions, format };
         }
 
-        return { "message": msg.message, "substitutions": {}, "format": null };
+        return { "message": msg.message, "substitutions": {}, "format": undefined };
     }
 }

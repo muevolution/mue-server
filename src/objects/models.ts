@@ -29,7 +29,13 @@ export const ALL_CONTAINER_TYPES: GameObjectTypes[] = [
 
 export const ALL_PARENT_TYPES = ALL_CONTAINER_TYPES;
 
-export function splitExtendedId(id: string, checkType?: GameObjectTypes): { "id"?: string, "shortid": string, "type"?: GameObjectTypes } {
+export interface ExtendedId {
+    "id"?: string;
+    "shortid": string;
+    "type"?: GameObjectTypes;
+}
+
+export function splitExtendedId(id: string | null, checkType?: GameObjectTypes): ExtendedId | null {
     if (!id) {
         return null;
     }
@@ -56,7 +62,7 @@ export function splitExtendedId(id: string, checkType?: GameObjectTypes): { "id"
     }
 }
 
-export function expectExtendedId(id: string, type: GameObjectTypes): string {
+export function expectExtendedId(id: string | null, type: GameObjectTypes): string | null {
     const exid = splitExtendedId(id, type);
     if (!exid) {
         return null;
@@ -78,8 +84,8 @@ export type HashResult<T extends string> = {
 
 export interface MetaData {
     name: string;
-    creator?: string;
-    parent?: string;
+    creator: string;
+    parent: string;
     location?: string;
 }
 

@@ -68,14 +68,13 @@ export class ScriptManager {
             await this.world.publishMessage(im, targetObj);
         };
 
-        // TODO: Mask functions from client (proxy?)
-        return {
+        let sandbox: JsSandbox = {
             "world": {
                 "tell": (message: string, target?: string, meta?: {[key: string]: any}) => {
                     wrap_async(world_tell(message, target, meta));
                 },
                 "tellExtended": async (extendedFormat: MessageFormats, extendedContent: {[key: string]: any}, target?: string, meta?: {[key: string]: any}) => {
-                    wrap_async(world_tell(null, target, meta, extendedFormat, extendedContent));
+                    wrap_async(world_tell(undefined, target, meta, extendedFormat, extendedContent));
                 },
                 "connectedPlayers": () => {
                     return this.world.getConnectedPlayerIds();
@@ -84,7 +83,7 @@ export class ScriptManager {
                 "getPlayerNameFromId": async (playerId: string) => {
                     const player = await this.world.getPlayerById(playerId);
                     if (!player) {
-                        return null;
+                        return undefined;
                     }
 
                     return player.name;
@@ -92,7 +91,7 @@ export class ScriptManager {
                 "getPlayerIdFromName": async (playerName: string) => {
                     const player = await this.world.getPlayerByName(playerName);
                     if (!player) {
-                        return null;
+                        return undefined;
                     }
 
                     return player.id;
@@ -100,7 +99,7 @@ export class ScriptManager {
                 "getParent": async (objectId: string) => {
                     const obj = await this.world.getObjectById(objectId);
                     if (!obj) {
-                        return null;
+                        return undefined;
                     }
 
                     return obj.parent;
@@ -108,7 +107,7 @@ export class ScriptManager {
                 "getLocation": async (objectId: string) => {
                     const obj = await this.world.getObjectById(objectId);
                     if (!obj) {
-                        return null;
+                        return undefined;
                     }
 
                     return obj.location;
@@ -116,13 +115,17 @@ export class ScriptManager {
                 "find": async (target: string) => {
                     const obj = await runBy.resolveTarget(target);
                     if (!obj) {
-                        return null;
+                        return undefined;
                     }
 
                     return obj.id;
                 },
                 "getDetails": async (objectId: string) => {
                     const obj = await this.world.getObjectById(objectId);
+                    if (!obj) {
+                        return {};
+                    }
+
                     // TODO: Clean this up
                     const meta = _.cloneDeep(obj.meta) as {[key: string]: string};
                     meta.type = obj.type;
@@ -131,6 +134,10 @@ export class ScriptManager {
                 },
                 "getProp": async (objectId: string, path: string) => {
                     const obj = await this.world.getObjectById(objectId);
+                    if (!obj) {
+                        return undefined;
+                    }
+
                     return obj.getProp(path);
                 },
                 "getContents": async (objectId: string) => {
@@ -169,5 +176,29 @@ export class ScriptManager {
                 "lodash": _
             }
         };
+
+        sandbox = Object.seal(sandbox);
+        sandbox = Object.preventExtensions(sandbox);
+
+        return new Proxy(sandbox, {
+            "setPrototypeOf": () => {
+                return false;
+            },
+            "isExtensible": () => {
+                return false;
+            },
+            "preventExtensions": () => {
+                return false;
+            },
+            "defineProperty": () => {
+                return false;
+            },
+            "set": () => {
+                return false;
+            },
+            "deleteProperty": () => {
+                return false;
+            }
+        });
     }
 }

@@ -21,15 +21,15 @@ export async function beforeTestGroup(redis: RedisConnection, world: World) {
     await world.init();
 
     // Create test player
-    const rootPlayer = await Player.create(world, "RootPlayer");
+    const rootPlayer = await Player.rootCreate(world, "RootPlayer");
     await world.storage.setRootValue(RootFields.GOD, rootPlayer.id);
 
     // Create the root room, which makes these tests a bit redundant but whatever we need it first
-    const rootRoom = await Room.create(world, "RootRoom", rootPlayer);
+    const rootRoom = await Room.rootCreate(world, "RootRoom");
     await world.storage.setRootValue(RootFields.ROOT_ROOM, rootRoom.id);
 
     // Create a player root room
-    const playerRoom = await Room.create(world, "PlayerRootRoom", rootPlayer);
+    const playerRoom = await Room.create(world, "PlayerRootRoom", rootPlayer, rootRoom);
     await world.storage.setRootValue(RootFields.PLAYER_ROOT, playerRoom.id);
 
     return { rootPlayer, rootRoom, playerRoom };

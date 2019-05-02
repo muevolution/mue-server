@@ -26,7 +26,7 @@ export class Item extends GameObject implements Container {
         return world.objectCache.standardImitate(id, GameObjectTypes.ITEM, (meta) => new Item(world, meta, id));
     }
 
-    protected constructor(world: World, meta?: MetaData, id?: string) {
+    protected constructor(world: World, meta: MetaData, id?: string) {
         super(world, GameObjectTypes.ITEM, meta, id);
     }
 
@@ -48,11 +48,11 @@ export class Item extends GameObject implements Container {
         return GetContents(this.world, this, type);
     }
 
-    async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
+    async find(term: string, type?: GameObjectTypes): Promise<GameObject | null> {
         return this.findIn(term, type);
     }
 
-    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject> {
+    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject | null> {
         const contents = await this.getContents();
         if (_.isEmpty(contents)) {
             return null;

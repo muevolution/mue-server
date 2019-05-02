@@ -50,8 +50,8 @@ export interface ExpandedCommandRequest {
 export interface CommunicationMessage {
     source?: string;
     target: string;
-    message: string;
-    extendedFormat: string;
-    extendedContent: {[key: string]: string};
+    message?: string;
+    extendedFormat?: string;
+    extendedContent?: {[key: string]: string};
     meta?: {};
 }

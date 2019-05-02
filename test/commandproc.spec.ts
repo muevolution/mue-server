@@ -21,7 +21,7 @@ describe("CommandProcessor", () => {
     before(async () => {
         const results = await beforeTestGroup(redis, world);
         rootPlayer = results.rootPlayer;
-        rootPlayer.move(results.rootRoom); // Move them into the root room so commands work
+        await rootPlayer.move(results.rootRoom); // Move them into the root room so commands work
     });
 
     after(async () => {
@@ -66,7 +66,7 @@ describe("CommandProcessor", () => {
             const { monitor, marker } = await world.addMonitor("Unknown command 'notARealCommand'");
             const cp = new CommandProcessor(world);
 
-            const actual = await cp.process(rootPlayer,  {"line": "notARealCommand"});
+            const actual = await cp.process(rootPlayer, {"line": "notARealCommand"});
             expect(actual).to.be.false;
 
             await expect(monitor).to.be.fulfilled;
@@ -75,7 +75,7 @@ describe("CommandProcessor", () => {
 
         it("should fail with an empty command", async () => {
             const cp = new CommandProcessor(world);
-            const actual = cp.process(rootPlayer, null);
+            const actual = cp.process(rootPlayer, null as any);
             await expect(actual).to.be.rejectedWith(Error);
         });
 

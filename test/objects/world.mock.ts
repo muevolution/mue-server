@@ -53,7 +53,9 @@ export class MockWorld extends World {
         }
 
         const listener = this.monitors.get(idn);
-        this.monitor.removeListener("monitor", listener);
+        if (listener) {
+            this.monitor.removeListener("monitor", listener);
+        }
         this.monitors.delete(idn);
     }
 }

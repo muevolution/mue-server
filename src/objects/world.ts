@@ -1,9 +1,10 @@
+import * as bluebird from "bluebird";
 import * as _ from "lodash";
 
 import { CommandRequest } from "../../client_types";
 import { CommandProcessor } from "../commandproc";
 import { generateId } from "../common";
-import { WorldNotInitError, WorldShutdownError } from "../errors";
+import { WorldNotInitError, WorldShutdownError, IllegalObjectIdError } from "../errors";
 import { Logger } from "../logging";
 import { InteriorMessage } from "../netmodels";
 import { ObjectCache } from "../objectcache";
@@ -108,12 +109,18 @@ export class World {
         return this.cmdproc.process(player, command);
     }
 
-    public async getPlayerById(id: string): Promise<Player> {
+    public async getPlayerById(id: string): Promise<Player | null> {
         this.stateEnforce();
-        return Player.imitate(this, expectExtendedId(id, GameObjectTypes.PLAYER));
+
+        const fullId = expectExtendedId(id, GameObjectTypes.PLAYER);
+        if (!fullId) {
+            return null;
+        }
+
+        return Player.imitate(this, fullId);
     }
 
-    public async getPlayerByName(name: string): Promise<Player> {
+    public async getPlayerByName(name: string): Promise<Player | null> {
         this.stateEnforce();
 
         const playerId = await this.storage.findPlayerByName(name);
@@ -124,9 +131,15 @@ export class World {
         return this.getPlayerById(playerId);
     }
 
-    public async getRoomById(id: string): Promise<Room> {
+    public async getRoomById(id: string): Promise<Room | null> {
         this.stateEnforce();
-        return Room.imitate(this, expectExtendedId(id, GameObjectTypes.ROOM));
+
+        const fullId = expectExtendedId(id, GameObjectTypes.ROOM);
+        if (!fullId) {
+            return null;
+        }
+
+        return Room.imitate(this, fullId);
     }
 
     public async getRootRoom(): Promise<Room> {
@@ -137,7 +150,12 @@ export class World {
             throw new Error("Unable to find root room.");
         }
 
-        return this.getRoomById(rootRoomId);
+        const rootRoom = await this.getRoomById(rootRoomId);
+        if (!rootRoom) {
+            throw new Error("Unable to find root room.");
+        }
+
+        return rootRoom;
     }
 
     public async getStartRoom(): Promise<Room> {
@@ -148,36 +166,63 @@ export class World {
             return this.getRootRoom();
         }
 
-        return this.getRoomById(startRoomId);
+        const startRoom = await this.getRoomById(startRoomId);
+        if (!startRoom) {
+            return this.getRootRoom();
+        }
+
+        return startRoom;
     }
 
-    public async getItemById(id: string): Promise<Item> {
+    public async getItemById(id: string): Promise<Item | null> {
         this.stateEnforce();
-        return Item.imitate(this, expectExtendedId(id, GameObjectTypes.ITEM));
+
+        const fullId = expectExtendedId(id, GameObjectTypes.ITEM);
+        if (!fullId) {
+            return null;
+        }
+
+        return Item.imitate(this, fullId);
     }
 
-    public async getScriptById(id: string): Promise<Script> {
+    public async getScriptById(id: string): Promise<Script | null> {
         this.stateEnforce();
-        return Script.imitate(this, expectExtendedId(id, GameObjectTypes.SCRIPT));
+
+        const fullId = expectExtendedId(id, GameObjectTypes.SCRIPT);
+        if (!fullId) {
+            return null;
+        }
+
+        return Script.imitate(this, fullId);
     }
 
-    public async getActionById(id: string): Promise<Action> {
+    public async getActionById(id: string): Promise<Action | null> {
         this.stateEnforce();
-        return Action.imitate(this, expectExtendedId(id, GameObjectTypes.ACTION));
+
+        const fullId = expectExtendedId(id, GameObjectTypes.ACTION);
+        if (!fullId) {
+            return null;
+        }
+
+        return Action.imitate(this, fullId);
     }
 
-    public async getObjectById(id: string, type: GameObjectTypes.ROOM): Promise<Room>;
-    public async getObjectById(id: string, type: GameObjectTypes.PLAYER): Promise<Player>;
-    public async getObjectById(id: string, type: GameObjectTypes.ITEM): Promise<Item>;
-    public async getObjectById(id: string, type: GameObjectTypes.SCRIPT): Promise<Script>;
-    public async getObjectById(id: string, type: GameObjectTypes.ACTION): Promise<Action>;
-    public async getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject>;
-    public async getObjectById(id: string, type?: GameObjectTypes): Promise<GameObject> {
+    public async getObjectById(id: string | undefined, type: GameObjectTypes.ROOM): Promise<Room | null>;
+    public async getObjectById(id: string | undefined, type: GameObjectTypes.PLAYER): Promise<Player | null>;
+    public async getObjectById(id: string | undefined, type: GameObjectTypes.ITEM): Promise<Item | null>;
+    public async getObjectById(id: string | undefined, type: GameObjectTypes.SCRIPT): Promise<Script | null>;
+    public async getObjectById(id: string | undefined, type: GameObjectTypes.ACTION): Promise<Action | null>;
+    public async getObjectById(id: string | undefined, type?: GameObjectTypes): Promise<GameObject | null>;
+    public async getObjectById(id: string | undefined, type?: GameObjectTypes): Promise<GameObject | null> {
         if (!id) {
             return null;
         }
 
         const split = splitExtendedId(id);
+        if (!split) {
+            throw new IllegalObjectIdError(id);
+        }
+
         if (!type) {
             if (!split.type) {
                 throw new Error(`ID ${id} was not extended`);
@@ -204,14 +249,14 @@ export class World {
         }
     }
 
-    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ROOM): Promise<Room[]>;
-    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.PLAYER): Promise<Player[]>;
-    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ITEM): Promise<Item[]>;
-    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.SCRIPT): Promise<Script[]>;
-    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ACTION): Promise<Action[]>;
-    public async getObjectsByIds(ids: Promise<string[]> | string[], type?: GameObjectTypes): Promise<GameObject[]>;
-    public async getObjectsByIds(ids: Promise<string[]> | string[], type?: GameObjectTypes): Promise<GameObject[]> {
-        return Promise.all(_.map(await ids, (id) => this.getObjectById(id, type)));
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ROOM): Promise<Array<Room | null>>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.PLAYER): Promise<Array<Player | null>>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ITEM): Promise<Array<Item | null>>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.SCRIPT): Promise<Array<Script | null>>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type: GameObjectTypes.ACTION): Promise<Array<Action | null>>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type?: GameObjectTypes): Promise<Array<GameObject | null>>;
+    public async getObjectsByIds(ids: Promise<string[]> | string[], type?: GameObjectTypes): Promise<Array<GameObject | null>> {
+        return bluebird.map(ids, (id) => this.getObjectById(id, type));
     }
 
     public async getActiveServers(): Promise<number> {

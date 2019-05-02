@@ -4,7 +4,7 @@ import { CommandRequest, ExpandedCommandRequest, ShortCommandRequest } from "../
 import * as builtins from "./builtins";
 import { Logger } from "./logging";
 import { LocalCommand } from "./netmodels";
-import { Action, GameObjectTypes, Player, Room, Script, World } from "./objects";
+import { GameObjectTypes, Player, Room, Script, World } from "./objects";
 import { ScriptManager } from "./scriptmanager";
 
 export class CommandProcessor {
@@ -118,7 +118,7 @@ export class CommandProcessor {
     }
 
     private async actionCommands(player: Player, command: LocalCommand): Promise<boolean> {
-        const action = await player.find(command.command, GameObjectTypes.ACTION) as Action;
+        const action = await player.find(command.command, GameObjectTypes.ACTION);
         if (!action || !action.target) {
             return false;
         }
@@ -136,11 +136,12 @@ export class CommandProcessor {
             const script = target as Script;
             try {
                 await this.scriptManager.runScript(script, player, command);
+                return true;
             } catch (err) {
                 Logger.warn(`Script ${script.id} got error as ${player.id}`, err);
                 await this.world.publishMessage(`Error evaluating script: ${err.message}`, player);
+                return true;
             }
-            return true;
         }
 
         throw new Error(`Action was tied to something other than a room or script: '${action.target}'`);

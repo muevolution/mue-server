@@ -131,7 +131,7 @@ describe("Action", () => {
             const actual1 = singleAction.matchCommand("");
             expect(actual1).to.be.false;
 
-            const actual2 = singleAction.matchCommand(null);
+            const actual2 = singleAction.matchCommand(null as any);
             expect(actual2).to.be.false;
         });
 

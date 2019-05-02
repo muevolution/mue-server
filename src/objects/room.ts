@@ -11,13 +11,24 @@ import { Script } from "./script";
 import { World } from "./world";
 
 export class Room extends GameObject implements Container {
-    static async create(world: World, name: string, creator: Player, parent?: RoomParents, location?: RoomLocations) {
+    static async create(world: World, name: string, creator: Player, parent: RoomParents, location?: RoomLocations) {
         const p = new Room(world, {
             name,
             "creator": creator.id,
-            "parent": parent ? parent.id : null,
-            "location": location ? location.id : parent ? parent.id : null,
+            "parent": parent.id,
+            "location": location ? location.id : parent ? parent.id : undefined,
         });
+
+        return world.objectCache.standardCreate(p, GameObjectTypes.ROOM);
+    }
+
+    static async rootCreate(world: World, name: string) {
+        const p = new Room(world, {
+            name,
+            "creator": "p:0",
+            "parent": "r:0",
+            "location": "r:0",
+        }, "r:0");
 
         return world.objectCache.standardCreate(p, GameObjectTypes.ROOM);
     }
@@ -26,7 +37,7 @@ export class Room extends GameObject implements Container {
         return world.objectCache.standardImitate(id, GameObjectTypes.ROOM, (meta) => new Room(world, meta, id));
     }
 
-    protected constructor(world: World, meta?: MetaData, id?: string) {
+    protected constructor(world: World, meta: MetaData, id?: string) {
         super(world, GameObjectTypes.ROOM, meta, id);
     }
 
@@ -57,7 +68,7 @@ export class Room extends GameObject implements Container {
     }
 
     // TODO: This method needs optimization/caching
-    async find(term: string, type?: GameObjectTypes): Promise<GameObject> {
+    async find(term: string, type?: GameObjectTypes): Promise<GameObject | null> {
         // Search this room first
         const firstSearch = await this.findIn(term, type);
         if (firstSearch) {
@@ -66,7 +77,7 @@ export class Room extends GameObject implements Container {
 
         // Now search the parent tree
         let current = await this.getParent();
-        while (current) {
+        while (current && !current.isParentRoot) {
             const action = await current.findIn(term, type);
             if (action) {
                 return action;
@@ -78,7 +89,13 @@ export class Room extends GameObject implements Container {
         return null;
     }
 
-    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject> {
+    findIn(term: string, type: GameObjectTypes.ROOM): Promise<Room | null>;
+    findIn(term: string, type: GameObjectTypes.PLAYER): Promise<Player | null>;
+    findIn(term: string, type: GameObjectTypes.ITEM): Promise<Item | null>;
+    findIn(term: string, type: GameObjectTypes.SCRIPT): Promise<Script | null>;
+    findIn(term: string, type: GameObjectTypes.ACTION): Promise<Action | null>;
+    findIn(term: string, type?: GameObjectTypes): Promise<GameObject | null>;
+    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject | null> {
         const contents = await this.getContents();
         if (_.isEmpty(contents)) {
             return null;
@@ -86,7 +103,7 @@ export class Room extends GameObject implements Container {
 
         // Test this object's actions
         if (type === GameObjectTypes.ACTION) {
-            const actions = _.filter(contents, (c) => c.type === GameObjectTypes.ACTION) as Action[];
+            const actions = _.filter(contents, (c) => !!c && c.type === GameObjectTypes.ACTION) as Action[];
             const matchedAction = _.find(actions, (a) => a.matchCommand(term));
             if (matchedAction) {
                 return matchedAction;
@@ -94,14 +111,14 @@ export class Room extends GameObject implements Container {
         }
 
         // Test general item names
-        const inv = _.find(contents, (c) => (!type || c.type === type) && c.matchName(term));
+        const inv = _.find(contents, (c) => !!c && (!type || c.type === type) && c.matchName(term));
         if (inv) {
             return inv;
         }
 
         // Test contained item's actions
         // TODO: Compose this better
-        const items = _.filter(contents, (c) => c.type === GameObjectTypes.ITEM) as Item[];
+        const items = _.filter(contents, (c) => !!c && c.type === GameObjectTypes.ITEM) as Item[];
         for (const item of items) {
             const fi = await item.findIn(term, type);
             if (fi) {

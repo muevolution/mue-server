@@ -10,7 +10,11 @@ export function generateId(): string {
     return shortid.generate().toLowerCase().replace("_", "a").replace("-", "b");
 }
 
-export function RedisClientDebug(client: import ("ioredis").Redis, msg: {}) {
+export function notEmpty<T>(value: T | null | undefined): value is T {
+    return value !== null && value !== undefined;
+}
+
+export function RedisClientDebug(client: import ("ioredis").Redis | undefined, msg: {}) {
     // TODO: Add debug toggle
     if (!client) { return; }
     client.publish("c:debug", util.inspect(msg), (err, reply) => {

@@ -1,5 +1,7 @@
+import * as bluebird from "bluebird";
 import * as _ from "lodash";
 
+import { notEmpty } from "../common";
 import { Action } from "./action";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
@@ -10,12 +12,12 @@ import { Script } from "./script";
 import { World } from "./world";
 
 export interface Container {
-    getContents(type?: GameObjectTypes): Promise<GameObject[]>;
-    find(term: string, type?: GameObjectTypes): Promise<GameObject>;
-    findIn(term: string, type?: GameObjectTypes): Promise<GameObject>;
+    getContents(type?: GameObjectTypes): Promise<Array<GameObject | null>>;
+    find(term: string, type?: GameObjectTypes): Promise<GameObject | null>;
+    findIn(term: string, type?: GameObjectTypes): Promise<GameObject | null>;
 }
 
-export interface GameObjectContainer extends GameObject, Container {}
+export interface GameObjectContainer extends GameObject, Container { }
 
 export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.ROOM): Promise<Room[]>;
 export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.PLAYER): Promise<Player[]>;
@@ -24,11 +26,11 @@ export async function GetContents(world: World, container: GameObject, type: Gam
 export async function GetContents(world: World, container: GameObject, type: GameObjectTypes.ACTION): Promise<Action[]>;
 export async function GetContents(world: World, container: GameObject, type?: GameObjectTypes): Promise<GameObject[]>;
 export async function GetContents(world: World, container: GameObject, type?: GameObjectTypes): Promise<GameObject[]> {
-    const contentIds = await world.storage.getContents(container, type);
-    const contentP = _.map(contentIds, (id) => {
-        return world.getObjectById(id, type);
-    });
-    return Promise.all(contentP);
+    const results = await bluebird.map(
+        world.storage.getContents(container, type),
+        (id) => world.getObjectById(id, type)
+    );
+    return results.filter(notEmpty);
 }
 
 export async function SpillContents(world: World, container: GameObjectContainer) {

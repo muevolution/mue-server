@@ -12,13 +12,24 @@ import { Script } from "./script";
 import { World } from "./world";
 
 export class Player extends GameObject implements Container {
-    static async create(world: World, name: string, creator?: Player, parent?: PlayerParents, location?: PlayerLocations) {
+    static async create(world: World, name: string, creator: Player, parent: PlayerParents, location?: PlayerLocations) {
         const p = new Player(world, {
             name,
-            "creator": creator ? creator.id : null,
-            "parent": parent ? parent.id : null,
-            "location": location ? location.id : parent ? parent.id : null,
+            "creator": creator.id,
+            "parent": parent.id,
+            "location": location ? location.id : parent ? parent.id : undefined,
         });
+
+        return world.objectCache.standardCreate(p, GameObjectTypes.PLAYER);
+    }
+
+    static async rootCreate(world: World, name: string) {
+        const p = new Player(world, {
+            name,
+            "creator": "p:0",
+            "parent": "r:0",
+            "location": "r:0"
+        }, "p:0");
 
         return world.objectCache.standardCreate(p, GameObjectTypes.PLAYER);
     }
@@ -27,7 +38,7 @@ export class Player extends GameObject implements Container {
         return world.objectCache.standardImitate(id, GameObjectTypes.PLAYER, (meta) => new Player(world, meta, id));
     }
 
-    protected constructor(world: World, meta?: MetaData, id?: string) {
+    protected constructor(world: World, meta: MetaData, id?: string) {
         super(world, GameObjectTypes.PLAYER, meta, id);
     }
 
@@ -71,7 +82,13 @@ export class Player extends GameObject implements Container {
         return GetContents(this.world, this, type);
     }
 
-    async find(term: string, type?: GameObjectTypes, searchLoc?: boolean): Promise<GameObject> {
+    find(term: string, type: GameObjectTypes.ROOM, searchLoc?: boolean): Promise<Room | null>;
+    find(term: string, type: GameObjectTypes.PLAYER, searchLoc?: boolean): Promise<Player | null>;
+    find(term: string, type: GameObjectTypes.ITEM, searchLoc?: boolean): Promise<Item | null>;
+    find(term: string, type: GameObjectTypes.SCRIPT, searchLoc?: boolean): Promise<Script | null>;
+    find(term: string, type: GameObjectTypes.ACTION, searchLoc?: boolean): Promise<Action | null>;
+    find(term: string, type?: GameObjectTypes, searchLoc?: boolean): Promise<GameObject | null>;
+    async find(term: string, type?: GameObjectTypes, searchLoc?: boolean): Promise<GameObject | null> {
         // Search on player first
         const firstSearch = await this.findIn(term, type);
         if (firstSearch) {
@@ -79,7 +96,7 @@ export class Player extends GameObject implements Container {
         }
 
         // Now search the player tree
-        let parent: Room;
+        let parent: Room | undefined;
         if (type === GameObjectTypes.ACTION) {
             parent = await this.getParent();
             if (parent) {
@@ -104,7 +121,13 @@ export class Player extends GameObject implements Container {
         return null;
     }
 
-    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject> {
+    findIn(term: string, type: GameObjectTypes.ROOM): Promise<Room | null>;
+    findIn(term: string, type: GameObjectTypes.PLAYER): Promise<Player | null>;
+    findIn(term: string, type: GameObjectTypes.ITEM): Promise<Item | null>;
+    findIn(term: string, type: GameObjectTypes.SCRIPT): Promise<Script | null>;
+    findIn(term: string, type: GameObjectTypes.ACTION): Promise<Action | null>;
+    findIn(term: string, type?: GameObjectTypes): Promise<GameObject | null>;
+    async findIn(term: string, type?: GameObjectTypes): Promise<GameObject | null> {
         const contents = await this.getContents();
         if (_.isEmpty(contents)) {
             return null;
@@ -139,7 +162,7 @@ export class Player extends GameObject implements Container {
     }
 
     /** Arbitrary target search, usually for a command */
-    async resolveTarget(target: string, absolute: boolean = false): Promise<GameObject> {
+    async resolveTarget(target: string, absolute: boolean = false): Promise<GameObject | null> {
         if (target === "me") {
             return this;
         } else if (target === "here") {

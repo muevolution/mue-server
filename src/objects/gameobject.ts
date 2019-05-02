@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
 
 import { BaseTypedEmitter } from "../common";
-import { GameObjectDestroyedError, InvalidGameObjectLocationError, InvalidGameObjectParentError } from "../errors";
+import { GameObjectDestroyedError, GameObjectIdDoesNotExist, IllegalObjectIdError, InvalidGameObjectLocationError, InvalidGameObjectParentError } from "../errors";
 import { PropStructure, PropValues } from "../storage";
 import { AllContainers, AllLocations } from "./model-aliases";
 import { ALL_CONTAINER_TYPES, ALL_PARENT_TYPES, GameObjectMessage, GameObjectTypes, IGameObject, MetaData, splitExtendedId } from "./models";
@@ -20,7 +20,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         }
 
         const split = splitExtendedId(data);
-        if (!split) {
+        if (!split || !split.type) {
             return false;
         }
 
@@ -33,9 +33,20 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     private _isDestroyed: boolean = false;
     private tupdater: BaseTypedEmitter<GameObjectMessage, GameObjectMessage>;
 
-    protected constructor(protected world: World, objectType: GameObjectTypes, meta?: MD, id?: string) {
+    protected constructor(protected world: World, objectType: GameObjectTypes, meta: MD, id?: string) {
         super();
-        this._id = id ? splitExtendedId(id, objectType).shortid : UNASSIGNED_ID;
+
+        if (id) {
+            const extendedId = splitExtendedId(id, objectType);
+            if (!extendedId || !extendedId.shortid) {
+                throw new IllegalObjectIdError(id);
+            }
+
+            this._id = extendedId.shortid;
+        } else {
+            this._id = UNASSIGNED_ID;
+        }
+
         this._type = objectType;
         this._meta = meta;
         this.tupdater = new BaseTypedEmitter(this);
@@ -90,12 +101,20 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return this.world.getObjectById(this.parent);
     }
 
+    public get isParentRoot() {
+        return this._meta.parent === this.id;
+    }
+
     public get location() {
         return this._meta.location;
     }
 
     public getLocation(): Promise<AllContainers> {
         return this.world.getObjectById(this.location) as Promise<AllContainers>;
+    }
+
+    public get isLocationRoot() {
+        return this._meta.location === this.id;
     }
 
     public getProp(path: string): Promise<PropValues> {
@@ -168,7 +187,13 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
     }
 
     async invalidate(): Promise<boolean> {
-        this._meta = await this.world.storage.getMeta(this);
+        const newMeta = await this.world.storage.getMeta(this);
+        if (!newMeta) {
+            // TODO: More specific error?
+            throw new GameObjectIdDoesNotExist(this.id, this.type);
+        }
+
+        this._meta = newMeta;
         return true;
     }
 
@@ -176,7 +201,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return `'${this.name}' [${this.id}]`;
     }
 
-    protected async _reparent(newParent: AllLocations, restrictedTypes?: GameObjectTypes[]): Promise<{ oldParent?: GameObject, newParent: GameObject }> {
+    protected async _reparent(newParent: AllLocations, restrictedTypes?: GameObjectTypes[]): Promise<{ oldParent?: GameObject, newParent: GameObject } | null> {
         if (!newParent) {
             return null;
         }
@@ -198,9 +223,10 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         }
 
         // Can't move into a destroyed location
-        const parent = await this.world.storage.getMeta(this, "parent");
-        const oldParent = await this.world.getObjectById(parent);
-        const result = await this.world.storage.reparentObject(this, newParent, oldParent);
+        const parent = await this.world.storage.getMeta(this, "parent") || undefined;
+
+        const oldParent = await this.world.getObjectById(parent) || undefined;
+        const result = await this.world.storage.reparentObject(this, newParent, parent);
         if (!result) {
             return null;
         }
@@ -212,7 +238,7 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         return output;
     }
 
-    protected async _move(newLocation: AllContainers, restrictedTypes?: GameObjectTypes[]): Promise<{ oldLocation?: GameObject, newLocation: GameObject }> {
+    protected async _move(newLocation: AllContainers, restrictedTypes?: GameObjectTypes[]): Promise<{ oldLocation?: GameObject, newLocation: GameObject } | null> {
         if (!newLocation) {
             return null;
         }
@@ -235,8 +261,8 @@ export abstract class GameObject<MD extends MetaData = MetaData> extends EventEm
         }
 
         // Handle the move
-        const oldLocationEid = await this.world.storage.getMeta(this, "location");
-        const oldLocation = await this.world.getObjectById(oldLocationEid);
+        const oldLocationEid = await this.world.storage.getMeta(this, "location") || undefined;
+        const oldLocation = await this.world.getObjectById(oldLocationEid) || undefined;
         const result = await this.world.storage.moveObject(this, newLocation as GameObject, oldLocation);
         if (!result) {
             return null;

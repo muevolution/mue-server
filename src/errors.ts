@@ -77,3 +77,9 @@ export class IllegalObjectNameError extends GameError {
         super(`Object(${type}) was given an illegal name "${name}"`, {name, type});
     }
 }
+
+export class IllegalObjectIdError extends GameError {
+    constructor(id: string) {
+        super(`Object was given an illegal id "${id}"`, {id});
+    }
+}

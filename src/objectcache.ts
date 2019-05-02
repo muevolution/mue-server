@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 
 import { GameObjectIdDoesNotExist, GameObjectIdExistsError } from "./errors";
-import { Action, GameObject, GameObjectTypes, Item, Player, Room, Script, splitExtendedId, World, MetaData } from "./objects";
+import { Action, GameObject, GameObjectTypes, Item, MetaData, Player, Room, Script, splitExtendedId, World } from "./objects";
 
 /** Local server object cache */
 export class ObjectCache {
@@ -14,13 +14,13 @@ export class ObjectCache {
     }
 
     /** Get an object from the cache. Returns null if not in cache. */
-    getObject(object: GameObject | string, type: GameObjectTypes.ROOM): Room;
-    getObject(object: GameObject | string, type: GameObjectTypes.PLAYER): Player;
-    getObject(object: GameObject | string, type: GameObjectTypes.ITEM): Item;
-    getObject(object: GameObject | string, type: GameObjectTypes.SCRIPT): Script;
-    getObject(object: GameObject | string, type: GameObjectTypes.ACTION): Action;
-    getObject(object: GameObject | string, type?: GameObjectTypes): GameObject;
-    getObject(object: GameObject | string, type?: GameObjectTypes): GameObject {
+    getObject(object: GameObject | string, type: GameObjectTypes.ROOM): Room | null;
+    getObject(object: GameObject | string, type: GameObjectTypes.PLAYER): Player | null;
+    getObject(object: GameObject | string, type: GameObjectTypes.ITEM): Item | null;
+    getObject(object: GameObject | string, type: GameObjectTypes.SCRIPT): Script | null;
+    getObject(object: GameObject | string, type: GameObjectTypes.ACTION): Action | null;
+    getObject(object: GameObject | string, type?: GameObjectTypes): GameObject | null;
+    getObject(object: GameObject | string, type?: GameObjectTypes): GameObject | null {
         let id: string;
         if (object instanceof GameObject) {
             id = object.id;
@@ -88,18 +88,21 @@ export class ObjectCache {
     }
 
     /** Invalidate an object on this server. */
-    invalidateLocal(p: GameObject | string): Promise<boolean> {
+    async invalidateLocal(p: GameObject | string): Promise<boolean> {
         const object = this.getObjectOfEither(p);
         if (object) {
             return object.invalidate();
         }
+
+        return false;
     }
 
     /** Invalidate all objects of a type on this server. */
     async invalidateAll(type: GameObjectTypes): Promise<boolean[]> {
         const p = _.chain(this._cache).keys()
             .map((m) => splitExtendedId(m))
-            .filter((f) => f.id && f.type === type)
+            .reject(_.isNil)
+            .filter((f) => !!f.id && f.type === type)
             .map((k) => this.invalidateLocal(k.id))
             .value();
 

@@ -8,7 +8,7 @@ export function command_unknown(world: World, player: Player, command: LocalComm
         "message": `Unknown command '${command.command}'`,
         "meta": {
             "errtype": "UNKNOWN_COMMAND",
-            "orignal": command
+            "original": command
         }
     };
     return world.publishMessage(msg, player);

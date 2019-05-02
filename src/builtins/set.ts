@@ -7,16 +7,16 @@ const ARG_REGEX = /(.+)=(.+?):(.+)?/;
 
 // TODO: Use `$set@target key:value` syntax instead of `$set target=key:value`
 export async function command_set(world: World, player: Player, command: LocalCommand) {
-    let target: string; // id
-    let key: string;
-    let value: string;
+    let target: string | undefined; // id
+    let key: string | undefined;
+    let value: string | undefined;
 
     if (command.args) {
         const reg = ARG_REGEX.exec(command.args);
         if (reg && reg.length === 4) {
             [, target, key, value] = reg;
         }
-    } else if (_.size(command.params) > 0) {
+    } else if (command.params && _.size(command.params) > 0) {
         target = command.params.target;
         key = command.params.key;
         value = command.params.value;

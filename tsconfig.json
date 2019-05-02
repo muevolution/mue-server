@@ -5,6 +5,7 @@
         "lib": ["es2017"],
         "noImplicitAny": true,
         "noUnusedLocals": true,
+        "strictNullChecks": true,
         "moduleResolution": "node",
         "sourceMap": true,
         "outDir": "build",
