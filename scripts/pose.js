@@ -1,14 +1,15 @@
 /// worldscript:pose
+/// <reference path="sandbox.d.ts" />
 
-const sayMessage = script.command.args;
+const sayMessage = mue.script.command.args;
 const formats = {
     "firstPerson": "{actor!name} {action}",
     "thirdPerson": `{actor!name} {action}`
 };
 const content = {
     "action": sayMessage,
-    "actor": script.thisPlayer
+    "actor": mue.script.thisPlayer
 };
 
-const thisRoom = await world.getLocation(script.thisPlayer);
-world.tellExtended(formats, content, thisRoom);
+const thisRoom = await mue.world.getLocation(mue.script.thisPlayer);
+mue.world.tellExtended(formats, content, thisRoom);

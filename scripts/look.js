@@ -1,9 +1,11 @@
 /// worldscript:l;look;lookat
+/// <reference path="sandbox.d.ts" />
 
-const _ = Library.lodash;
+const _ = mue.Library.lodash;
+const bluebird = mue.Library.bluebird;
 
 // Parse commands
-const command = script.command;
+const command = mue.script.command;
 let lookTarget;
 if (command.params && command.params.target) {
     lookTarget = command.params.target;
@@ -14,27 +16,27 @@ if (command.params && command.params.target) {
 let lookObj;
 if (!lookTarget) {
     // Look at the room
-    lookObj = await world.getLocation(script.thisPlayer);
+    lookObj = await mue.world.getLocation(mue.script.thisPlayer);
 } else {
     // Find the named target
-    lookObj = await world.find(lookTarget);
+    lookObj = await mue.world.find(lookTarget);
 }
 
 if (!lookObj) {
-    return world.tell("I couldn't find that.");
+    return mue.world.tell("I couldn't find that.");
 }
 
 // Construct the output
-let outputLines = [];
+const outputLines = [];
 
 // Get the name if it's supposed to be shown
-if (Util.splitId(lookObj).type === Types.Room) {
-    const roomDetails = await world.getDetails(lookObj);
+if (mue.Util.splitId(lookObj).type === mue.Types.Room) {
+    const roomDetails = await mue.world.getDetails(lookObj);
     outputLines.push(roomDetails.name);
 }
 
 // Add the description
-const desc = await world.getProp(lookObj, "description");
+const desc = await mue.world.getProp(lookObj, "description");
 if (!desc) {
     outputLines.push("You see nothing special.");
 } else {
@@ -42,16 +44,16 @@ if (!desc) {
 }
 
 // Collect the visibile contents
-const contents = await world.getContents(lookObj);
+const contents = await mue.world.getContents(lookObj);
 if (contents && contents.length > 0) {
     outputLines.push("Contents:");
-    await Promise.all(contents.map(async (f) => {
-        const item = await world.getDetails(f);
-        if (!_.includes([Types.Room, Types.Action], item.type)) {
+    await bluebird.each(contents, async (f) => {
+        const item = await mue.world.getDetails(f);
+        if (!_.includes([mue.Types.Room, mue.Types.Action], item.type)) {
             outputLines.push(` - ${item.name} [${f}]`);
         }
-    }));
+    });
 }
 
 // Finally, send to the player!
-world.tell(outputLines.join("\n"), undefined, {"target": lookObj});
+mue.world.tell(outputLines.join("\n"), undefined, {"target": lookObj});
