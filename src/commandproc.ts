@@ -5,6 +5,7 @@ import * as builtins from "./builtins";
 import { Logger } from "./logging";
 import { LocalCommand } from "./netmodels";
 import { GameObjectTypes, Player, Room, Script, World } from "./objects";
+import { PlayerLocations, PlayerParents } from "./objects/model-aliases";
 import { ScriptManager } from "./scriptmanager";
 
 export class CommandProcessor {
@@ -14,9 +15,51 @@ export class CommandProcessor {
         this.scriptManager = new ScriptManager(world);
     }
 
-    processLogin(username: string, password: string) {
-        // TODO: Actual authentication
-        return this.world.getPlayerByName(username);
+    async processLogin(username: string, password: string): Promise<{ player?: Player, error?: string }> {
+        const player = await this.world.getPlayerByName(username);
+        if (!player) {
+            return { "error": "Could not find login user." };
+        }
+
+        const passwordTest = await player.checkPassword(password);
+        if (!passwordTest) {
+            return { "error": "Invalid password." };
+        }
+
+        return { player };
+    }
+
+    async registerPlayer(username: string, password: string, creator?: Player, parent?: PlayerParents, location?: PlayerLocations): Promise<{ player?: Player, error?: string }> {
+        // TODO: Check server settings for player registration origin
+
+        // TODO: Check username rules
+        if (!username) {
+            return { "error": "A username must be provided." };
+        }
+
+        if (!password) {
+            return { "error": "A password must be provided." };
+        }
+
+        let player = await this.world.getPlayerByName(username);
+        if (player) {
+            return { "error": "That player already exists." };
+        }
+
+        // TODO: Make the defaults configurable
+        if (!creator) {
+            creator = await this.world.getRootPlayer();
+        }
+        if (!parent) {
+            parent = await this.world.getRootRoom();
+        }
+        if (!location) {
+            location = await this.world.getStartRoom();
+        }
+
+        player = await Player.create(this.world, username, password, creator, parent, location);
+
+        return { player };
     }
 
     async process(player: Player, request: CommandRequest): Promise<boolean> {

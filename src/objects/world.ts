@@ -62,6 +62,11 @@ export class World {
         await this.opts.redisConnection.client.quit();
     }
 
+    public get commandProcessor(): CommandProcessor {
+        this.stateEnforce();
+        return this.cmdproc;
+    }
+
     public get storage(): Storage {
         this.stateEnforce();
         return new Storage(this.opts.redisConnection);
@@ -140,6 +145,22 @@ export class World {
         }
 
         return Room.imitate(this, fullId);
+    }
+
+    public async getRootPlayer(): Promise<Player> {
+        this.stateEnforce();
+
+        const rootPlayerId = await this.storage.getRootValue(RootFields.GOD);
+        if (!rootPlayerId) {
+            throw new Error("Unable to find god player.");
+        }
+
+        const rootPlayer = await this.getPlayerById(rootPlayerId);
+        if (!rootPlayer) {
+            throw new Error("Unable to find god player.");
+        }
+
+        return rootPlayer;
     }
 
     public async getRootRoom(): Promise<Room> {

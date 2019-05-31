@@ -1,6 +1,7 @@
 import * as _ from "lodash";
 
 import { InteriorMessage } from "../netmodels";
+import * as security from "../security";
 import { Action } from "./action";
 import { Container, GetContents, SpillContents } from "./container";
 import { GameObject } from "./gameobject";
@@ -11,13 +12,21 @@ import { Room } from "./room";
 import { Script } from "./script";
 import { World } from "./world";
 
-export class Player extends GameObject implements Container {
-    static async create(world: World, name: string, creator: Player, parent: PlayerParents, location?: PlayerLocations) {
+export interface PlayerMetaData extends MetaData {
+    passwordHash?: string;
+}
+
+export class Player extends GameObject<PlayerMetaData> implements Container {
+    static async create(world: World, name: string, password: string, creator: Player, parent: PlayerParents, location?: PlayerLocations) {
+        // Hash the password
+        const passwordHash = await security.hashPassword(password);
+
         const p = new Player(world, {
             name,
             "creator": creator.id,
             "parent": parent.id,
             "location": location ? location.id : parent ? parent.id : undefined,
+            passwordHash
         });
 
         return world.objectCache.standardCreate(p, GameObjectTypes.PLAYER);
@@ -38,7 +47,7 @@ export class Player extends GameObject implements Container {
         return world.objectCache.standardImitate(id, GameObjectTypes.PLAYER, (meta) => new Player(world, meta, id));
     }
 
-    protected constructor(world: World, meta: MetaData, id?: string) {
+    protected constructor(world: World, meta: PlayerMetaData, id?: string) {
         super(world, GameObjectTypes.PLAYER, meta, id);
     }
 
@@ -207,5 +216,18 @@ export class Player extends GameObject implements Container {
 
     quit(reason?: string) {
         this.emit("quit", reason);
+    }
+
+    async checkPassword(password: string): Promise<boolean> {
+        if (!password) {
+            return false;
+        }
+
+        const savedHash = this.meta.passwordHash;
+        if (!savedHash) {
+            return false;
+        }
+
+        return security.comparePasswords(savedHash, password);
     }
 }

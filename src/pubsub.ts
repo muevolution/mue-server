@@ -79,7 +79,8 @@ export class PubSub {
     }
 
     init() {
-        this.tsock.emit("welcome", "MOTD goes here");
+        // TODO: Pull this from global settings
+        this.tsock.emit("welcome", MOTD);
 
         this.client.on("message", async (channel, message: string) => {
             let displayedChannel = channel.substring(2);
@@ -120,11 +121,21 @@ export class PubSub {
 
         this.tsock.on("auth", async (data) => {
             const cp = new CommandProcessor(this.world);
-            const player = await cp.processLogin(data.username, data.password);
-            if (!player) {
-                this.tsock.emit("auth", { "success": false, "message": "Could not find login user.", "code": 100 });
-                this.socket.disconnect();
+            let loginResult: { error?: string; player?: Player; };
+            let loginAction: string;
+
+            if (data.isRegistration) {
+                loginResult = await cp.registerPlayer(data.username, data.password);
+                loginAction = "registering";
             } else {
+                loginResult = await cp.processLogin(data.username, data.password);
+                loginAction = "logging in"
+            }
+
+            if (loginResult.error) {
+                this.tsock.emit("auth", { "success": false, "message": `Problem while ${loginAction}: ${loginResult.error}`, "code": 100 });
+            } else if (loginResult.player) {
+                const player = loginResult.player;
                 const channels = ["c:world", `c:${player.location}`, `c:${player.id}`];
                 const result = await this.subscribe(player, ...channels);
                 if (result) {
@@ -134,6 +145,8 @@ export class PubSub {
                     this.tsock.emit("fatal", { "message": "Unable to subscribe to channels.", "code": 201 });
                     await this.quit();
                 }
+            } else {
+                this.tsock.emit("auth", { "success": false, "message": "Failed to perform login. Contact an administrator.", "code": 101 });
             }
         });
 
@@ -178,3 +191,31 @@ export class PubSub {
         return { "message": msg.message, "substitutions": {}, "format": undefined };
     }
 }
+
+// TODO: Move this somewhere better
+// 45678901234567890123456789012345678901234567890123456789012345678901234567890
+const MOTD = `/*/*/*
+Welcome to mue (multi-user evolution)! This system is still under development.
+
+  █▀▄▀█   ▄   █      ▄▄▄▄▀ ▄█   ▄      ▄▄▄▄▄   ▄███▄   █▄▄▄▄
+  █ █ █    █  █   ▀▀▀ █    ██    █    █     ▀▄ █▀   ▀  █  ▄▀
+  █ ▄ █ █   █ █       █    ██ █   █ ▄  ▀▀▀▀▄   ██▄▄    █▀▀▌
+  █   █ █   █ ███▄   █     ▐█ █   █  ▀▄▄▄▄▀    █▄   ▄▀ █  █
+     █  █▄ ▄█     ▀ ▀       ▐ █▄ ▄█            ▀███▀     █
+    ▀    ▀▀▀                   ▀▀▀                      ▀
+  ▄███▄      ▄   ████▄ █       ▄     ▄▄▄▄▀ ▄█ ████▄    ▄
+  █▀   ▀      █  █   █ █        █ ▀▀▀ █    ██ █   █     █
+  ██▄▄   █     █ █   █ █     █   █    █    ██ █   █ ██   █
+  █▄   ▄▀ █    █ ▀████ ███▄  █   █   █     ▐█ ▀████ █ █  █
+  ▀███▀    █  █            ▀ █▄ ▄█  ▀       ▐       █  █ █
+            █▐                ▀▀▀                   █   ██
+            ▐
+
+          🚧 This is a development server. Help us develop! 🚧
+                       https://github.com/mue/mue-server
+
+Telnet bridge commands:
+  - auth <username> <password>
+  - register <username> <password>
+
+*\\*\\*\\`;

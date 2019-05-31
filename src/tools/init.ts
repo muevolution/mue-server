@@ -44,7 +44,7 @@ async function main() {
     Logger.debug("Player moves complete");
 
     // Create second player in one go
-    const player2 = await Player.create(world, "Kauko", player1, playerRootRoom, room0);
+    const player2 = await Player.create(world, "Kauko", "kaukopasswd", player1, playerRootRoom, room0);
     Logger.debug("Player 2 is: " + player2.toString());
 
     // Load scripts

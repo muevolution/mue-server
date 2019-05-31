@@ -30,6 +30,7 @@ export interface ErrorResponse {
 export interface AuthRequest {
     username: string;
     password: string;
+    isRegistration?: boolean;
 }
 
 export interface AuthResponse extends GenericResponse {

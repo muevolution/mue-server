@@ -23,6 +23,7 @@
     "redeploy-scripts": "node build/tools/init-reload-scripts.js"
   },
   "dependencies": {
+    "bcryptjs": "^2.4.3",
     "bluebird": "^3.5.4",
     "express": "^4.16.4",
     "express-async-await": "^1.1.0",
@@ -38,6 +39,7 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.2",
     "@types/bluebird": "^3.5.26",
     "@types/chai": "^4.1.7",
     "@types/chai-as-promised": "^7.1.0",

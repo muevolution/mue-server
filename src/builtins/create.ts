@@ -6,12 +6,13 @@ import { AllContainers } from "../objects/model-aliases";
 
 // $createaction look
 // $createitem Magic wand
-// $createplayer Kauko
+// $createplayer Kauko=somepassword
 // $createroom Kauko's Bedroom
 // $createscript wand.js
 export async function command_create(world: World, player: Player, command: LocalCommand) {
     let type: GameObjectTypes;
     let name: string | undefined;
+    let targetPassword: string | undefined;
     let targetLocation: string | undefined;
     let targetParent: string | undefined;
 
@@ -42,10 +43,12 @@ export async function command_create(world: World, player: Player, command: Loca
         const spl = full.split("=");
         name = spl[0];
         if (spl.length > 1) {
+            targetPassword = spl[1];
             targetLocation = spl[1];
         }
     } else if (command.params && _.size(command.params) > 0) {
         name = command.params.name;
+        targetPassword = command.params.password;
         targetLocation = command.params.location;
         targetParent = command.params.parent;
     }
@@ -135,6 +138,10 @@ export async function command_create(world: World, player: Player, command: Loca
             newObjP = Item.create(world, name, player, parent, location);
             break;
         case GameObjectTypes.PLAYER:
+            if (!targetPassword) {
+                await world.publishMessage(`Error creating player. No password provided.`, player);
+                return;
+            }
             if (!parent) {
                 await world.publishMessage(`Error creating player. No parent found. Please contact an admin.`, player);
                 return;
@@ -143,7 +150,16 @@ export async function command_create(world: World, player: Player, command: Loca
                 await world.publishMessage(`Error creating player. Parent is not a room.`, player);
                 return;
             }
-            newObjP = Player.create(world, name, player, parent, location);
+
+            const registrationResponse = await world.commandProcessor.registerPlayer(name, targetPassword, player, parent, location);
+            if (registrationResponse.error) {
+                await world.publishMessage(`Error creating player. ${registrationResponse.error}`, player);
+            } else if (registrationResponse.player) {
+                newObjP = Promise.resolve(registrationResponse.player);
+            } else {
+                await world.publishMessage(`Error creating player. Please contact an admin.`, player);
+            }
+
             break;
         case GameObjectTypes.ROOM:
             if (!parent) {
