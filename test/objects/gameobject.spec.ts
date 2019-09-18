@@ -191,7 +191,7 @@ describe("GameObject", () => {
         });
 
         it("should update the player name index", async () => {
-            const newPlayer = await Player.create(world, "gameobjrenametest", rootPlayer, rootRoom, playerRoom);
+            const newPlayer = await Player.create(world, "gameobjrenametest", "password", rootPlayer, rootRoom, playerRoom);
             expect(newPlayer).to.exist;
 
             const renameActual = await newPlayer.rename("gameobjrenamed");

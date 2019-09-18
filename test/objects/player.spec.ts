@@ -29,8 +29,8 @@ describe("Player", () => {
         await afterTestGroup(world);
     });
 
-    function createTestPlayer(name?: string): Promise<Player> {
-        return Player.create(world, `TestPlayer${name}`, rootPlayer, rootRoom, playerRoom);
+    function createTestPlayer(name?: string, password?: string): Promise<Player> {
+        return Player.create(world, `TestPlayer${name}`, password || "password", rootPlayer, rootRoom, playerRoom);
     }
 
     // Actual methods
@@ -144,7 +144,7 @@ describe("Player", () => {
             item = await Item.create(world, "Sample item", rootPlayer, playerRoom, testPlayer);
 
             const contents = await testPlayer.getContents();
-            expect(contents).to.be.an("array").and.have.lengthOf(1).and.containSubset([{"_type": "i", "_id": item.shortid}]);
+            expect(contents).to.be.an("array").and.have.lengthOf(1).and.containSubset([{ "_type": "i", "_id": item.shortid }]);
         });
 
         it("should lose an item after moved", async () => {
@@ -182,12 +182,12 @@ describe("Player", () => {
                 item = await Item.create(world, "Sample item", rootPlayer, playerRoom, testPlayer);
 
                 const actual = await testPlayer.find("Sample item");
-                expect(actual).to.exist.and.to.containSubset({"_type": "i", "_id": item.shortid});
+                expect(actual).to.exist.and.to.containSubset({ "_type": "i", "_id": item.shortid });
             });
 
             it("should find an item by name with type", async () => {
                 const actual = await testPlayer.find("Sample item", GameObjectTypes.ITEM);
-                expect(actual).to.exist.and.to.containSubset({"_type": "i", "_id": item.shortid});
+                expect(actual).to.exist.and.to.containSubset({ "_type": "i", "_id": item.shortid });
             });
 
             xit("should find an item in a container", () => { return; });
@@ -221,7 +221,7 @@ describe("Player", () => {
                 action = await Action.create(world, "sampleact", rootPlayer, testPlayer);
 
                 const actual = await testPlayer.find("sampleact", GameObjectTypes.ACTION);
-                expect(actual).to.exist.and.to.containSubset({"_type": "a", "_id": action.shortid});
+                expect(actual).to.exist.and.to.containSubset({ "_type": "a", "_id": action.shortid });
             });
 
             xit("should follow find precedence", () => {
@@ -251,7 +251,7 @@ describe("Player", () => {
         before(async () => {
             testPlayer = await createTestPlayer("PlayerResolveTarget");
             const testRoom = await Room.create(world, "TestRoomResolveTarget", rootPlayer, rootRoom, playerRoom);
-            testPlayer2 = await Player.create(world, "PlayerResolveTarget2", rootPlayer, rootRoom, testRoom);
+            testPlayer2 = await Player.create(world, "PlayerResolveTarget2", "testpass", rootPlayer, rootRoom, testRoom);
             item = await Item.create(world, "FindMe", rootPlayer, rootRoom, testPlayer);
             await Item.create(world, "NotFindMe", rootPlayer, rootRoom, testPlayer2);
         });
@@ -334,4 +334,27 @@ describe("Player", () => {
 
     xdescribe("#sendMessage()", () => { return; });
     xdescribe("#quit()", () => { return; });
+
+    describe("#checkPassword()", () => {
+        let testPlayer: Player;
+
+        before(async () => {
+            testPlayer = await createTestPlayer("TestyPlayery", "testpassw");
+        });
+
+        it("should succeed on a correct password", async () => {
+            const actual = await testPlayer.checkPassword("testpassw");
+            expect(actual).to.be.true;
+        });
+
+        it("should fail on a wrong password", async () => {
+            const actual = await testPlayer.checkPassword("wrongo");
+            expect(actual).to.be.false;
+        });
+
+        it("should fail on a null or empty password", async () => {
+            const actual = await testPlayer.checkPassword(null as any);
+            expect(actual).to.be.false;
+        });
+    });
 });

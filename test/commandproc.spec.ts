@@ -5,7 +5,7 @@ import chaiSubset = require("chai-subset");
 import { CommandRequest } from "../src/../client_types";
 import { CommandProcessor } from "../src/commandproc";
 import { initLogger } from "../src/logging";
-import { Player } from "../src/objects";
+import { Player, Room } from "../src/objects";
 import { afterTestGroup, beforeTestGroup, init } from "./common";
 
 initLogger();
@@ -17,10 +17,12 @@ chai.use(chaiAsPromised);
 
 describe("CommandProcessor", () => {
     let rootPlayer: Player;
+    let rootRoom: Room;
 
     before(async () => {
         const results = await beforeTestGroup(redis, world);
         rootPlayer = results.rootPlayer;
+        rootRoom = results.rootRoom;
         await rootPlayer.move(results.rootRoom); // Move them into the root room so commands work
     });
 
@@ -31,22 +33,36 @@ describe("CommandProcessor", () => {
     // Actual methods
 
     describe(".processLogin", () => {
+        let loginTestPlayer: Player;
+
+        before(async () => {
+            loginTestPlayer = await Player.create(world, "CPPL", "testpass", rootPlayer, rootRoom);
+        });
+
         describe("password authentication", () => {
             it("should successfully log in a user", async () => {
                 const cp = new CommandProcessor(world);
 
-                const actual = await cp.processLogin(rootPlayer.name, "");
-                expect(actual).to.exist.and.have.property("id").to.equal(rootPlayer.id);
+                const actual = await cp.processLogin(loginTestPlayer.name, "testpass");
+                expect(actual).to.exist.and.have.property("player").have.property("id").to.equal(loginTestPlayer.id);
+                expect(actual).to.exist.and.not.have.property("error");
+            });
+
+            it("should not log in a user with a bad password", async () => {
+                const cp = new CommandProcessor(world);
+
+                const actual = await cp.processLogin(loginTestPlayer.name, "wrongpass");
+                expect(actual).to.exist.and.not.have.property("player");
+                expect(actual).to.exist.and.have.property("error").to.equal("Invalid password.");
             });
 
             it("should not log in a user that does not exist", async () => {
                 const cp = new CommandProcessor(world);
 
-                const actual = await cp.processLogin("invalidUsername", "");
-                expect(actual).to.be.null;
+                const actual = await cp.processLogin("invalidUsername", "asdf");
+                expect(actual).to.exist.and.not.have.property("player");
+                expect(actual).to.exist.and.have.property("error").to.equal("Could not find login user.");
             });
-
-            xit("should not log in a user with a bad password");
         });
     });
 

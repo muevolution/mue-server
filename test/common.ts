@@ -45,8 +45,8 @@ export function objectCreator(world: World, rootRoom: Room, rootPlayer: Player, 
         return Action.create(world, `TestAct${name}`, rootPlayer, playerRoom);
     }
 
-    function createTestPlayer(name?: string): Promise<Player> {
-        return Player.create(world, `Test player - ${name}`, rootPlayer, rootRoom, playerRoom);
+    function createTestPlayer(name?: string, password?: string): Promise<Player> {
+        return Player.create(world, `Test player - ${name}`, password || "password", rootPlayer, rootRoom, playerRoom);
     }
 
     function createTestItem(name?: string): Promise<Item> {
