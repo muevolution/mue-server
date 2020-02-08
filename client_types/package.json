@@ -1,11 +1,16 @@
 {
-  "name": "@mue/client-types",
+  "name": "@muevolution/client-types",
   "version": "0.0.1",
   "description": "MUE Client Types",
   "author": "Kauko <kauko@biosynth.link>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@github.com/muevolution/mue-server.git",
+    "directory": "client_types"
+  },
   "publishConfig": {
-    "registry": "https://npm.cloud.neocodenetworks.org"
+    "registry": "https://npm.pkg.github.com/"
   },
   "types": "index.d.ts"
 }
