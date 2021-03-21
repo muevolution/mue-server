@@ -5,7 +5,7 @@
   "author": "Kauko <kauko@biosynth.link>",
   "license": "MIT",
   "publishConfig": {
-    "registry": "https://npm.cloud.neocodenetworks.org"
+    "registry": "https://npm.pkg.github.com"
   },
   "main": "build/app.js",
   "scripts": {
