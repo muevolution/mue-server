@@ -3,7 +3,7 @@ import { expect } from "chai";
 import chaiAsPromised = require("chai-as-promised");
 import chaiSubset = require("chai-subset");
 import { GameObjectIdExistsError, InvalidGameObjectNameError, PlayerNameAlreadyExistsError } from "../src/errors";
-import { GameObject, GameObjectTypes, Item, Player, Room, RootFields } from "../src/objects";
+import { GameObject, GameObjectTypes, Item, MetaData, Player, Room, RootFields } from "../src/objects";
 import { RedisConnection } from "../src/redis";
 import { Storage } from "../src/storage";
 import { beforeTestGroup, init, objectCreator } from "./common";
@@ -55,12 +55,12 @@ describe("Storage", () => {
         it("should add a new object [INCPL]", async () => {
             const id = "tiao1";
             const location = "r:rewq";
-            const meta = {
+            const meta = new MetaData({
                 "creator": "p:asdf",
                 "parent": "i:sdfg",
                 "name": "TestItem.addObject1",
                 location
-            };
+            });
 
             const testItem = new MockItem(world, meta, id);
 
@@ -70,7 +70,7 @@ describe("Storage", () => {
 
             // Redis: Meta should be set
             const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
-            expect(redisMetaActual).to.deep.equal(meta);
+            expect(redisMetaActual).to.have.containSubset(meta.toJSON());
 
             // Redis: Should be in master item list
             const redisObjListActual = await redis.client.smembers("i:i:all");
@@ -84,11 +84,11 @@ describe("Storage", () => {
         it("should add a new object [INCP-]", async () => {
             const id = "tiao2";
             const parent = "i:sdfg";
-            const meta = {
+            const meta = new MetaData({
                 "creator": "p:asdf",
                 parent,
                 "name": "TestItem.addObject2"
-            };
+            });
 
             const testItem = new MockItem(world, meta, id);
 
@@ -98,7 +98,7 @@ describe("Storage", () => {
 
             // Redis: Meta should be set
             const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
-            expect(redisMetaActual).to.deep.equal(meta);
+            expect(redisMetaActual).to.have.containSubset(meta.toJSON());
 
             // Redis: Should be in master item list
             const redisObjListActual = await redis.client.smembers("i:i:all");
@@ -107,13 +107,13 @@ describe("Storage", () => {
 
         it("should add a new object [INC-L]", async () => {
             const id = "tiao3";
-            const meta = {
+            const meta = new MetaData({
                 "creator": "p:asdf",
                 "name": "TestItem.addObject3",
                 "location": "r:rewq"
-            };
+            } as any);
 
-            const testItem = new MockItem(world, meta as any, id);
+            const testItem = new MockItem(world, meta, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -121,7 +121,7 @@ describe("Storage", () => {
 
             // Redis: Meta should be set
             const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
-            expect(redisMetaActual).to.deep.equal(meta);
+            expect(redisMetaActual).to.have.containSubset(meta.toJSON());
 
             // Redis: Should be in master item list
             const redisObjListActual = await redis.client.smembers("i:i:all");
@@ -130,12 +130,12 @@ describe("Storage", () => {
 
         it("should add a new object [INC--]", async () => {
             const id = "tiao4";
-            const meta = {
+            const meta = new MetaData({
                 "creator": "p:asdf",
                 "name": "TestItem.addObject4"
-            };
+            } as any);
 
-            const testItem = new MockItem(world, meta as any, id);
+            const testItem = new MockItem(world, meta, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -143,7 +143,7 @@ describe("Storage", () => {
 
             // Redis: Meta should be set
             const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
-            expect(redisMetaActual).to.deep.equal(meta);
+            expect(redisMetaActual).to.have.containSubset(meta.toJSON());
 
             // Redis: Should be in master item list
             const redisObjListActual = await redis.client.smembers("i:i:all");
@@ -153,13 +153,13 @@ describe("Storage", () => {
         it("should add a new object [IN-PL]", async () => {
             const id = "tiao5";
             const location = "r:rewq";
-            const meta = {
+            const meta = new MetaData({
                 "parent": "i:sdfg",
                 "name": "TestItem.addObject5",
                 location
-            };
+            } as any);
 
-            const testItem = new MockItem(world, meta as any, id);
+            const testItem = new MockItem(world, meta, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -167,7 +167,7 @@ describe("Storage", () => {
 
             // Redis: Meta should be set
             const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
-            expect(redisMetaActual).to.deep.equal(meta);
+            expect(redisMetaActual).to.have.containSubset(meta.toJSON());
 
             // Redis: Should be in master item list
             const redisObjListActual = await redis.client.smembers("i:i:all");
@@ -181,12 +181,12 @@ describe("Storage", () => {
         it("should add a new object [IN--L]", async () => {
             const id = "tiao6";
             const location = "r:rewq";
-            const meta = {
+            const meta = new MetaData({
                 "name": "TestItem.addObject6",
                 location
-            };
+            } as any);
 
-            const testItem = new MockItem(world, meta as any, id);
+            const testItem = new MockItem(world, meta, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -194,7 +194,7 @@ describe("Storage", () => {
 
             // Redis: Meta should be set
             const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
-            expect(redisMetaActual).to.deep.equal(meta);
+            expect(redisMetaActual).to.have.containSubset(meta.toJSON());
 
             // Redis: Should be in master item list
             const redisObjListActual = await redis.client.smembers("i:i:all");
@@ -207,11 +207,11 @@ describe("Storage", () => {
 
         it("should add a new object [IN---]", async () => {
             const id = "tiao7";
-            const meta = {
+            const meta = new MetaData({
                 "name": "TestItem.addObject7"
-            };
+            } as any);
 
-            const testItem = new MockItem(world, meta as any, id);
+            const testItem = new MockItem(world, meta, id);
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
@@ -219,7 +219,7 @@ describe("Storage", () => {
 
             // Redis: Meta should be set
             const redisMetaActual = await redis.client.hgetall(`s:i:${id}:meta`);
-            expect(redisMetaActual).to.deep.equal(meta);
+            expect(redisMetaActual).to.have.containSubset(meta.toJSON());
 
             // Redis: Should be in master item list
             const redisObjListActual = await redis.client.smembers("i:i:all");
@@ -228,14 +228,14 @@ describe("Storage", () => {
 
         it("should fail with an ID that already exists [*NCPL]", async () => {
             // Create first item
-            const testItem = new MockItem(world, {"name": "TestItem.addObject8"} as any, "tiao8");
+            const testItem = new MockItem(world, new MetaData({ "name": "TestItem.addObject8" } as any), "tiao8");
 
             // API: Should return true
             const actual = await storage.addObject(testItem);
             expect(actual).to.be.true;
 
             // Create second item
-            const testItem2 = new MockItem(world, {"name": "TestItem.addObject8"} as any, "tiao8");
+            const testItem2 = new MockItem(world, new MetaData({ "name": "TestItem.addObject8" } as any), "tiao8");
 
             // API: Should throw
             const actual2 = storage.addObject(testItem2);
@@ -245,12 +245,12 @@ describe("Storage", () => {
         it("should fail with no name [I-CPL]", async () => {
             const id = "tiao9";
             const location = "r:rewq";
-            const meta = {
+            const meta = new MetaData({
                 "creator": "p:asdf",
                 "parent": "i:sdfg",
                 "name": null as any,
                 location
-            };
+            });
 
             const testItem = new MockItem(world, meta, id);
 
@@ -260,7 +260,7 @@ describe("Storage", () => {
         });
 
         it("should add a new player to the name key [IN---]", async () => {
-            const testPlayer = new MockPlayer(world, {"name": "tiao10"} as any);
+            const testPlayer = new MockPlayer(world, new MetaData({ "name": "tiao10" } as any));
 
             // API: Should return true
             const actual = await storage.addObject(testPlayer);
@@ -273,14 +273,14 @@ describe("Storage", () => {
 
         it("should fail to add a player that already exists [I*---]", async () => {
             // Create first item
-            const testPlayer = new MockPlayer(world, {"name": "tiao11"} as any);
+            const testPlayer = new MockPlayer(world, new MetaData({ "name": "tiao11" } as any));
 
             // API: Should return true
             const actual = await storage.addObject(testPlayer);
             expect(actual).to.be.true;
 
             // Create second item
-            const testPlayer2 = new MockPlayer(world, {"name": "tiao11"} as any);
+            const testPlayer2 = new MockPlayer(world, new MetaData({ "name": "tiao11" } as any));
 
             // API: Should throw
             const actual2 = storage.addObject(testPlayer2);
@@ -395,7 +395,7 @@ describe("Storage", () => {
             const testPlayer = await creator().createTestPlayer("UpdatePlayerNameTestABC");
 
             // Create a fake player that we'll change the value to
-            const fakePlayer = new MockPlayer(world, {"name": "UpdaterPlayerNameTestXYZ"} as any);
+            const fakePlayer = new MockPlayer(world, new MetaData({ "name": "UpdaterPlayerNameTestXYZ" } as any));
             fakePlayer.setInitialId(testPlayer.shortid);
 
             // API: Should return expected values
@@ -683,12 +683,12 @@ describe("Storage", () => {
 
         it("should update all values for an object", async () => {
             const testItem = await creator().createTestItem("Storage.updateMeta");
+            const meta = testItem.meta.__clone();
+            meta.name = "NewNamier";
+            meta.creator = "p:asdf";
 
             // API: Should return expected values
-            const actual = await storage.updateMeta(testItem, {
-                "name": "NewNamier",
-                "creator": "p:asdf"
-            });
+            const actual = await storage.updateMeta(testItem, meta);
             expect(actual).to.be.true;
 
             // Redis: Ensure values were set correctly

@@ -20,12 +20,12 @@ const CODE_WRAP_TAIL = `
 
 export class Script extends GameObject {
     static async create(world: World, name: string, creator: Player, location?: ScriptLocations) {
-        const p = new Script(world, {
+        const p = new Script(world, new MetaData({
             name,
             "creator": creator.id,
             "parent": creator.id,
             "location": location ? location.id : creator.id
-        });
+        }));
 
         return world.objectCache.standardCreate(p, GameObjectTypes.SCRIPT);
     }

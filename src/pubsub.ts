@@ -1,4 +1,5 @@
 import * as _ from "lodash";
+import type { Socket } from "socket.io";
 
 import {
     ClientToServer,
@@ -25,7 +26,7 @@ export class PubSub {
 
     constructor(
         baseclient: RedisConnection,
-        private socket: SocketIO.Socket,
+        private socket: Socket,
         private world: World
     ) {
         this.baseclient = baseclient.client;

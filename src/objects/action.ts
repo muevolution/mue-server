@@ -3,28 +3,38 @@ import * as _ from "lodash";
 import { IllegalObjectNameError } from "../errors";
 import { GameObject } from "./gameobject";
 import { ActionLocations, ActionParents } from "./model-aliases";
-import { GameObjectTypes, MetaData } from "./models";
+import { GameObjectTypes, MetaData, MetaDataValues } from "./models";
 import { Player } from "./player";
 import { Room } from "./room";
 import { Script } from "./script";
 import { World } from "./world";
 
-export interface ActionMetaData extends MetaData {
+interface ActionMetaDataValues extends MetaDataValues {
     target?: string;
 }
 
+export class ActionMetaData extends MetaData {
+    target?: string;
+
+    constructor(data: ActionMetaDataValues | Record<string, string>) {
+        super(data);
+        this.target = data.target;
+    }
+}
+
+// tslint:disable-next-line: max-classes-per-file
 export class Action extends GameObject<ActionMetaData> {
     static async create(world: World, name: string, creator: Player, location?: ActionLocations) {
         if (name.startsWith("$")) {
             throw new IllegalObjectNameError(name, GameObjectTypes.ACTION);
         }
 
-        const p = new Action(world, {
+        const p = new Action(world, new ActionMetaData({
             name,
             "creator": creator.id,
             "parent": creator.id,
             "location": location ? location.id : creator.id
-        });
+        }));
 
         return world.objectCache.standardCreate(p, GameObjectTypes.ACTION);
     }

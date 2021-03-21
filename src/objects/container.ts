@@ -12,7 +12,7 @@ import { Script } from "./script";
 import { World } from "./world";
 
 export interface Container {
-    getContents(type?: GameObjectTypes): Promise<Array<GameObject | null>>;
+    getContents(type?: GameObjectTypes): Promise<(GameObject | null)[]>;
     find(term: string, type?: GameObjectTypes): Promise<GameObject | null>;
     findIn(term: string, type?: GameObjectTypes): Promise<GameObject | null>;
 }

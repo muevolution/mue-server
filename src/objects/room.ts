@@ -12,23 +12,23 @@ import { World } from "./world";
 
 export class Room extends GameObject implements Container {
     static async create(world: World, name: string, creator: Player, parent: RoomParents, location?: RoomLocations) {
-        const p = new Room(world, {
+        const p = new Room(world, new MetaData({
             name,
             "creator": creator.id,
             "parent": parent.id,
             "location": location ? location.id : parent ? parent.id : undefined,
-        });
+        }));
 
         return world.objectCache.standardCreate(p, GameObjectTypes.ROOM);
     }
 
     static async rootCreate(world: World, name: string) {
-        const p = new Room(world, {
+        const p = new Room(world, new MetaData({
             name,
             "creator": "p:0",
             "parent": "r:0",
             "location": "r:0",
-        }, "r:0");
+        }), "r:0");
 
         return world.objectCache.standardCreate(p, GameObjectTypes.ROOM);
     }

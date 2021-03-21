@@ -1,0 +1,11 @@
+{
+    "exit": true,
+    "require": [
+        "ts-node/register",
+        "source-map-support/register",
+        "test/mocha.env.js"
+    ],
+    "recursive": true,
+    "reporter": "mochawesome",
+    "spec": "test/**/*.spec.ts"
+}

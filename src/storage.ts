@@ -4,10 +4,10 @@ import * as _ from "lodash";
 
 import { generateId } from "./common";
 import { GameObjectIdExistsError, InvalidGameObjectNameError, PlayerNameAlreadyExistsError } from "./errors";
-import { GameObject, GameObjectTypes, MetaData, RootFields, splitExtendedId } from "./objects";
+import { GameObject, GameObjectTypes, GetMetaDataType, MetaData, RootFields, splitExtendedId } from "./objects";
 import { RedisConnection } from "./redis";
 
-export type PropValues = string | number | Array<string | number> | undefined;
+export type PropValues = string | number | (string | number)[] | undefined;
 export interface PropStructure {
     [key: string]: PropValues;
 }
@@ -133,9 +133,9 @@ export class Storage {
         return true;
     }
 
-    getAllPlayers(): Promise<{ [name: string]: string }> {
-        const result = this.client.hgetall(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER));
-        return this.valueOrNull(result);
+    async getAllPlayers(): Promise<{ [name: string]: string }> {
+        const result = await this.client.hgetall(Storage.getByNameKeyStructure(GameObjectTypes.PLAYER));
+        return result;
     }
 
     findPlayerByName(name: string): Promise<string | null> {
@@ -167,12 +167,8 @@ export class Storage {
     }
 
     async setProp(owner: GameObject | string, path: string, value: PropValues): Promise<boolean> {
-        const serialized = JSON.stringify(value);
-        if (value) {
-            await this.client.hset(Storage.getPropKeyStructure(owner), path, serialized);
-        } else {
-            await this.client.hdel(Storage.getPropKeyStructure(owner), path);
-        }
+        const serialized = value ? JSON.stringify(value) : undefined;
+        await this.updateHash(Storage.getPropKeyStructure(owner), path, serialized);
         return true;
     }
 
@@ -252,19 +248,22 @@ export class Storage {
         if (key) {
             return this.client.hget(Storage.getMetaKeyStructure(object), key);
         } else {
+            const mtype = GetMetaDataType(object);
+
             const result = await this.client.hgetall(Storage.getMetaKeyStructure(object));
-            return result && _.size(result) > 0 ? result : null;
+            return result && _.size(result) > 0 ? new mtype(result) : null;
         }
     }
 
-    updateMeta<MD extends Readonly<MetaData>>(object: GameObject<MD> | string, meta: Partial<MD>): Promise<boolean>;
-    updateMeta<MD extends Readonly<MetaData>, KD extends keyof MD>(object: GameObject<MD> | string, key: KD, value: string): Promise<boolean>;
-    async updateMeta<MD extends Readonly<MetaData>, KD extends keyof MD>(object: GameObject<MD> | string, meta: KD | Partial<MD>, value?: string): Promise<boolean> {
+    updateMeta<MD extends MetaData>(object: GameObject<MD> | string, meta: MD): Promise<boolean>;
+    updateMeta<MD extends MetaData, KD extends keyof MD>(object: GameObject<MD> | string, key: KD, value: string): Promise<boolean>;
+    async updateMeta<MD extends MetaData, KD extends keyof MD>(object: GameObject<MD> | string, meta: KD | MD, value?: string): Promise<boolean> {
         const key = Storage.getMetaKeyStructure(object);
         if (typeof meta === "object") {
-            await this.redis.multiWrap((multi) => this.updateHashInMulti(multi, key, meta as {}));
+            await this.redis.multiWrap((multi) => this.updateHashInMulti(multi, key, meta.toJSON()));
         } else {
-            await this.client.hset(key, meta.toString(), value);
+            const field = meta as string;
+            await this.updateHash(key, field, value);
         }
 
         return true;
@@ -280,13 +279,20 @@ export class Storage {
         return true;
     }
 
-    private updateHashInMulti(multi: import("ioredis").Pipeline, key: string, value: { [key: string]: string }) {
+    private updateHash(key: string, field: string, value: string | undefined | null): Promise<number>;
+    private updateHash(key: string, field: string, value: string | undefined | null, multi: import("ioredis").Pipeline): import("ioredis").Pipeline;
+    private updateHash(key: string, field: string, value: string | undefined | null, multi?: import("ioredis").Pipeline) {
+        const cli = multi || this.client;
+        if (value !== undefined && value !== null) {
+            return cli.hset(key, field, value);
+        } else {
+            return cli.hdel(key, field);
+        }
+    }
+
+    private updateHashInMulti(multi: import("ioredis").Pipeline, key: string, value: { [key: string]: string | undefined | null }) {
         _.forEach(value, (v, k) => {
-            if (v !== undefined && v !== null) {
-                multi.hset(key, k, v);
-            } else {
-                multi.hdel(key, k);
-            }
+            this.updateHash(key, k, v, multi);
         });
     }
 

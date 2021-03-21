@@ -12,12 +12,12 @@ import { World } from "./world";
 
 export class Item extends GameObject implements Container {
     static async create(world: World, name: string, creator: Player, parent: ItemParents, location?: ItemLocations) {
-        const p = new Item(world, {
+        const p = new Item(world, new MetaData({
             name,
             "creator": creator.id,
             "parent": parent.id,
             "location": location ? location.id : parent.id
-        });
+        }));
 
         return world.objectCache.standardCreate(p, GameObjectTypes.ITEM);
     }

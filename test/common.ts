@@ -1,5 +1,5 @@
 import { initLogger } from "../src/logging";
-import { Action, Item, Player, Room, RootFields, Script, World } from "../src/objects";
+import { Action, Item, MetaData, Player, Room, RootFields, Script, World } from "../src/objects";
 import { RedisConnection } from "../src/redis";
 import { MockGameObject } from "./objects/gameobject.mock";
 import { MockWorld } from "./objects/world.mock";
@@ -62,12 +62,12 @@ export function objectCreator(world: World, rootRoom: Room, rootPlayer: Player, 
     }
 
     async function createTestObj(name?: string, id?: string): Promise<MockGameObject> {
-        const mgo = new MockGameObject(world, {
+        const mgo = new MockGameObject(world, new MetaData({
             "name": `Test Object - ${name}`,
             "creator": rootPlayer.id,
             "location": playerRoom.id,
             "parent": rootRoom.id,
-        }, id);
+        }), id);
         await world.storage.addObject(mgo);
         return mgo;
     }

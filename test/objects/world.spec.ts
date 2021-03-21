@@ -29,7 +29,7 @@ describe("World", () => {
     }
 
     function createEndPromise(redis: MockRedisConnection) {
-        return new Promise((resolve, reject) => {
+        return new Promise<void>((resolve, reject) => {
             redis.client.on("end", () => {
                 resolve();
             });
@@ -200,14 +200,14 @@ describe("World", () => {
         // Full test cases should be in commandproc
 
         it("should process a command", async () => {
-            const actual = await world.command(testPlayer, {"line": "$echo test"});
+            const actual = await world.command(testPlayer, { "line": "$echo test" });
             expect(actual).to.be.true;
         });
 
         it("should fail if server has not been initialized", async () => {
             const world2 = await createWorld();
 
-            const actual = world2.command(testPlayer, {"line": "$echo test"});
+            const actual = world2.command(testPlayer, { "line": "$echo test" });
             await expect(actual).to.be.rejectedWith(WorldNotInitError);
 
             await world2.shutdown();
@@ -217,7 +217,7 @@ describe("World", () => {
             const world2 = await createWorldAndInit();
             await world2.shutdown();
 
-            const actual = world2.command(testPlayer, {"line": "$echo test"});
+            const actual = world2.command(testPlayer, { "line": "$echo test" });
             await expect(actual).to.be.rejectedWith(WorldShutdownError);
         });
     });
@@ -705,11 +705,11 @@ describe("World", () => {
     });
 
     // TODO: This needs a simulated player
-    xdescribe("#getActiveRoomIds", () => {});
+    xdescribe("#getActiveRoomIds", () => { });
 
     // TODO: This needs a simulated player
-    xdescribe("#getConnectedPlayerIds", () => {});
+    xdescribe("#getConnectedPlayerIds", () => { });
 
     // TODO: Figure out how to test this
-    xdescribe("#invalidateScriptCache", () => {});
+    xdescribe("#invalidateScriptCache", () => { });
 });

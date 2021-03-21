@@ -1,3 +1,5 @@
+import * as _ from "lodash";
+
 export enum GameObjectTypes {
     ROOM = "r",
     PLAYER = "p",
@@ -82,14 +84,39 @@ export type HashResult<T extends string> = {
     [P in T]: string;
 };
 
-export interface MetaData {
+export interface MetaDataValues {
+    name: string;
+    creator: string;
+    parent: string;
+    location?: string
+};
+
+export class MetaData {
     name: string;
     creator: string;
     parent: string;
     location?: string;
-}
 
-export type MetaKeys = keyof MetaData;
+    constructor(data: MetaDataValues | Record<string, string>) {
+        this.name = data.name;
+        this.creator = data.creator;
+        this.parent = data.parent;
+        this.location = data.location;
+    }
+
+    toJSON(): { [key: string]: string | undefined | null } {
+        return _.mapValues(this, _.identity) as { [key: string]: string | undefined | null };
+    }
+
+    toRecord(): Record<string, string> {
+        const json = this.toJSON();
+        return _.filter(json, f => !!f) as any as Record<string, string>;
+    }
+
+    __clone(): MetaData {
+        return new MetaData(this.toJSON() as any);
+    }
+}
 
 export interface GameObjectMessage {
     rename: ObjectRenameEvent;

@@ -1,7 +1,7 @@
 import * as _ from "lodash";
 
 import { GameObjectIdDoesNotExist, GameObjectIdExistsError } from "./errors";
-import { Action, GameObject, GameObjectTypes, Item, MetaData, Player, Room, Script, splitExtendedId, World } from "./objects";
+import { Action, ExtendedId, GameObject, GameObjectTypes, Item, MetaData, Player, Room, Script, splitExtendedId, World } from "./objects";
 
 /** Local server object cache */
 export class ObjectCache {
@@ -99,10 +99,12 @@ export class ObjectCache {
 
     /** Invalidate all objects of a type on this server. */
     async invalidateAll(type: GameObjectTypes): Promise<boolean[]> {
+        const isEidValid = (v: ExtendedId): v is ExtendedId & { id: string } => !_.isNil(v) && !_.isNil(v.id);
+
         const p = _.chain(this._cache).keys()
             .map((m) => splitExtendedId(m))
-            .reject(_.isNil)
-            .filter((f) => !!f.id && f.type === type)
+            .filter(isEidValid)
+            .filter((f) => f.type === type)
             .map((k) => this.invalidateLocal(k.id))
             .value();
 

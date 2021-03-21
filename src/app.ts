@@ -3,7 +3,7 @@ import "source-map-support/register";
 import * as express from "express";
 import * as aa from "express-async-await";
 import * as http from "http";
-import * as socketio from "socket.io";
+import { Server } from "socket.io";
 
 import { config } from "./config";
 import { initLogger, Logger } from "./logging";
@@ -26,7 +26,7 @@ app.get("/", (req, res) => {
 app.get("/players/:playerId", async (req, res) => {
     const player = await world.getPlayerById(req.route.playerId);
     if (!player) {
-        return res.status(404).json({"error": true, "message": "Not found"});
+        return res.status(404).json({ "error": true, "message": "Not found" });
     }
 
     const output = {
@@ -44,7 +44,7 @@ app.get("/players", async (req, res) => {
 app.get("/rooms/:roomId", async (req, res) => {
     const room = await world.getRoomById(req.route.roomId);
     if (!room) {
-        return res.status(404).json({"error": true, "message": "Not found"});
+        return res.status(404).json({ "error": true, "message": "Not found" });
     }
 
     const output = {
@@ -54,7 +54,7 @@ app.get("/rooms/:roomId", async (req, res) => {
     res.json(output);
 });
 
-const io = socketio(server);
+const io = new Server(server);
 io.on("connection", (socket) => {
     Logger.debug("Got a connection");
     const ps = new PubSub(redis, socket, world);

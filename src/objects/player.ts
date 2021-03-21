@@ -7,38 +7,48 @@ import { Container, GetContents, SpillContents } from "./container";
 import { GameObject } from "./gameobject";
 import { Item } from "./item";
 import { PlayerLocations, PlayerParents } from "./model-aliases";
-import { GameObjectTypes, MetaData } from "./models";
+import { GameObjectTypes, MetaData, MetaDataValues } from "./models";
 import { Room } from "./room";
 import { Script } from "./script";
 import { World } from "./world";
 
-export interface PlayerMetaData extends MetaData {
+interface PlayerMetaDataValues extends MetaDataValues {
     passwordHash?: string;
 }
 
+export class PlayerMetaData extends MetaData {
+    passwordHash?: string;
+
+    constructor(data: PlayerMetaDataValues | Record<string, string>) {
+        super(data);
+        this.passwordHash = data.passwordHash;
+    }
+}
+
+// tslint:disable-next-line: max-classes-per-file
 export class Player extends GameObject<PlayerMetaData> implements Container {
     static async create(world: World, name: string, password: string, creator: Player, parent: PlayerParents, location?: PlayerLocations) {
         // Hash the password
         const passwordHash = await security.hashPassword(password);
 
-        const p = new Player(world, {
+        const p = new Player(world, new PlayerMetaData({
             name,
             "creator": creator.id,
             "parent": parent.id,
             "location": location ? location.id : parent ? parent.id : undefined,
             passwordHash
-        });
+        }));
 
         return world.objectCache.standardCreate(p, GameObjectTypes.PLAYER);
     }
 
     static async rootCreate(world: World, name: string) {
-        const p = new Player(world, {
+        const p = new Player(world, new PlayerMetaData({
             name,
             "creator": "p:0",
             "parent": "r:0",
             "location": "r:0"
-        }, "p:0");
+        }), "p:0");
 
         return world.objectCache.standardCreate(p, GameObjectTypes.PLAYER);
     }
