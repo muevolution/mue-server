@@ -30,7 +30,7 @@
     "glob": "^7.1.6",
     "ioredis": "^4.24.2",
     "lodash": "^4.17.21",
-    "nconf": "^0.11.2",
+    "nconf": "^0.11.4",
     "shortid": "^2.2.16",
     "socket.io": "^4.0.0",
     "source-map-support": "^0.5.19",
